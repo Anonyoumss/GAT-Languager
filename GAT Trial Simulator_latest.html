@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GAT Trial Simulator</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='4' fill='%231C2B4A'/%3E%3Crect x='6' y='13' width='12' height='2.4' fill='%23B8823F'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+<style>
+:root{--bg:#F6F5F1;--surface:#FBFAF6;--surface2:#EEEBE2;--text:#1B1B18;--muted:#6B6A62;--border:#DEDACD;--primary:#1C2B4A;--pink:#F6F5F1;--accent:#B8823F;--danger:#B8433A;--ok:#2E7D57;}
+.mx{font-family:'IBM Plex Mono',monospace;font-size:15px;display:inline-flex;align-items:center;gap:2px;vertical-align:middle}
+.frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 3px;line-height:1.15}
+.frac .num,.frac .den{padding:0 3px}
+.frac .num{border-bottom:1.4px solid currentColor}
+.root{display:inline-flex;align-items:flex-start;vertical-align:middle;margin:0 2px}
+.root .rootidx{font-size:10px;margin-right:-2px;margin-top:-2px}
+.root .radsym{font-size:16px}
+.root .radicand{border-top:1.4px solid currentColor;padding:0 3px 0 1px;margin-top:1px}
+.mx sup{font-size:11px}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#14151A;--surface:#1D1F27;--surface2:#262834;--text:#ECEAE1;--muted:#9A988D;--border:#353849;--primary:#5F82C4;--pink:#0E1220;--accent:#D6A268;--danger:#E08277;--ok:#4CAE7F;}}
+:root[data-theme="dark"]{--bg:#14151A;--surface:#1D1F27;--surface2:#262834;--text:#ECEAE1;--muted:#9A988D;--border:#353849;--primary:#5F82C4;--pink:#0E1220;--accent:#D6A268;--danger:#E08277;--ok:#4CAE7F;}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 'IBM Plex Sans',system-ui,sans-serif;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);min-height:100vh;display:flex;flex-direction:column}
+body[dir="rtl"]{font-family:'IBM Plex Sans Arabic','IBM Plex Sans',system-ui,sans-serif}
+::selection{background:var(--accent);color:#1B1B18}
+.top{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--border);direction:ltr}
+.top-in{max-width:980px;margin:0 auto;padding:10px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:600;min-width:0}
+.brand small{font-weight:400;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.clock{font:600 15px 'IBM Plex Mono',monospace;min-width:48px;text-align:right}
+.clock.low{color:var(--danger)}
+.xbtn{background:none;border:1px solid var(--border);color:var(--muted);border-radius:4px;padding:4px 10px;font:inherit;font-size:12px;cursor:pointer}
+.tbar{height:2px;background:var(--border)}
+.tbar i{display:block;height:100%;width:0;background:var(--primary)}
+.tbar i.low{background:var(--danger)}
+.wrap{width:100%;max-width:980px;margin:0 auto;padding:22px 18px 40px;flex:1}
+h1{font-size:26px;line-height:1.2;margin:6px 0 8px;font-weight:600}
+h2{font-size:16px;margin:0 0 4px;font-weight:600}
+.muted{color:var(--muted)}
+.label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+body[dir="rtl"] .label{letter-spacing:0;text-transform:none;font-size:12px}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:20px;margin-bottom:16px}
+.rows .row{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:center;padding:14px 0;border-bottom:1px solid var(--border)}
+.rows .row:last-child{border-bottom:0}
+.rt{font-weight:600}
+.btn{background:var(--primary);color:var(--pink);border:1px solid var(--primary);border-radius:4px;padding:9px 18px;font:inherit;font-weight:600;font-size:14px;cursor:pointer}
+.btn.line{background:none;color:var(--text);border-color:var(--border)}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn:focus-visible,.opt:focus-visible,.xbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.opts{display:grid;gap:8px;margin-top:14px}
+.opt{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1px solid var(--border);background:var(--bg);border-radius:4px;cursor:pointer;transition:border-color .12s,background .12s}
+.opt:hover{border-color:var(--primary)}
+.opt.sel{border-color:var(--primary);background:var(--surface2)}
+.key{flex:0 0 26px;height:26px;border:1px solid var(--border);border-radius:3px;display:grid;place-items:center;font:600 12px 'IBM Plex Sans Arabic','IBM Plex Mono',monospace}
+.opt.sel .key{background:var(--primary);color:var(--pink);border-color:var(--primary)}
+.ot{padding-top:2px}
+.qt{font-size:16px;line-height:1.7;white-space:pre-wrap}
+.split{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--border);border-radius:6px;overflow:hidden;background:var(--surface)}
+.pane{padding:20px;min-width:0}
+.passage{border-inline-end:1px solid var(--border);max-height:68vh;overflow-y:auto;background:var(--bg)}
+.ptext{white-space:pre-wrap;line-height:1.8;font-size:15px}
+@media (max-width:720px){.split{grid-template-columns:1fr}.passage{max-height:34vh;border-inline-end:0;border-bottom:1px solid var(--border)}}
+.dom{border-bottom:1px solid var(--border);padding-bottom:10px;margin-bottom:14px;font-size:13px;color:var(--muted)}
+.dom .tl{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+body[dir="rtl"] .dom .tl{letter-spacing:0;text-transform:none;font-size:12px}
+.dom b{color:var(--text);font-weight:600;margin-inline-end:8px}
+.qmeta{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-bottom:6px}
+.qbar{height:2px;background:var(--border);margin-bottom:14px}
+.qbar i{display:block;height:100%;background:var(--accent)}
+.nav{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:16px}
+.flagbtn{display:inline-flex;align-items:center;gap:6px;background:none;border:1px solid var(--border);color:var(--muted);border-radius:4px;padding:9px 14px;font:inherit;font-size:14px;cursor:pointer}
+.flagbtn.on{border-color:var(--accent);color:var(--accent)}
+.ltr-num,mjx-container{direction:ltr!important;unicode-bidi:isolate;display:inline-block}
+u{text-decoration-thickness:2px;text-underline-offset:3px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:8px 6px;border-bottom:1px solid var(--border);text-align:start;vertical-align:top}
+th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:500}
+.brow{display:grid;grid-template-columns:150px 1fr 120px;gap:12px;align-items:center;margin:9px 0;font-size:13px}
+.btrack{height:8px;background:var(--surface2);border-radius:2px;overflow:hidden}
+.bfill{display:block;height:100%;background:var(--primary)}
+.bfill.b{background:var(--accent)}
+.bv{text-align:end;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:12px}
+@media (max-width:560px){.brow{grid-template-columns:96px 1fr 88px;gap:8px}}
+.score{font-size:56px;line-height:1;font-weight:600;font-family:'IBM Plex Mono',monospace}
+.rgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:6px;margin:12px 0 16px;direction:ltr}
+.rcell{aspect-ratio:1;border:1px solid var(--border);border-radius:3px;display:grid;place-items:center;font:600 13px 'IBM Plex Mono',monospace;cursor:pointer;background:var(--bg)}
+.rcell.ans{background:var(--primary);color:var(--pink);border-color:var(--primary)}
+.rcell.un{border-style:dashed;color:var(--muted)}
+.rcell.fl{outline:2px solid var(--accent);outline-offset:1px}
+.dirs{margin:12px 0 0;padding-inline-start:20px}
+.dirs li{margin:6px 0}
+.note{border:1px solid var(--accent);border-radius:4px;padding:8px 12px;font-size:13px;margin-bottom:14px}
+.sk{background:var(--surface2);border-radius:3px;animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.45}}
+.foot{border-top:1px solid var(--border);padding:14px 18px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted);direction:ltr}
+.foot a{color:var(--muted);margin-inline-start:14px}
+.modal{position:fixed;inset:0;background:rgba(20,21,26,.55);display:grid;place-items:center;padding:18px;z-index:50}
+.modal .panel{max-width:460px;margin:0}
+@media (prefers-reduced-motion:reduce){.sk{animation:none}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <div class="brand">
+      <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="4" fill="var(--primary)"/><rect x="6" y="13" width="12" height="2.4" fill="var(--accent)"/><rect x="6" y="8" width="7" height="2.4" fill="var(--pink)"/></svg>
+      <span>GAT Trial Simulator</span><small id="headerTitle"></small>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <span class="clock" id="timerDisp"></span>
+      <button class="xbtn" id="exitBtn" onclick="confirmExit()" style="display:none">End test</button>
+    </div>
+  </div>
+  <div class="tbar"><i id="timeBar"></i></div>
+</header>
+<main class="wrap" id="app"></main>
+<footer class="foot">
+  <span>Unofficial practice tool. Not affiliated with ETEC.</span>
+  <nav><a href="#" onclick="showLegal('tos');return false">Terms of Service</a><a href="#" onclick="showLegal('privacy');return false">Privacy Policy</a></nav>
+</footer>
+
+<script>
+// ============================================================
+// REAL OFFICIAL ETEC DATA · domain weights + intro text from
+// the official 30-page guide + product FAQ you provided.
+// ============================================================
+const DOMAIN_INFO = {
+  verbal_analogy: { en:{name:"Verbal Analogies", desc:"Identify the relationship between a pair of words, then select the answer choice that reflects the same relationship."},
+                     ar:{name:"التناظر اللفظي", desc:"أدرك العلاقة بين زوج من الكلمات في مطلع السؤال، ثم اختر نظائرها من الاختيارات."} },
+  sentence_completion: { en:{name:"Sentence Completion", desc:"Understand incomplete short texts and select the appropriate words or phrases to complete them meaningfully."},
+                     ar:{name:"إكمال الجمل", desc:"افهم صيغ النصوص القصيرة الناقصة، واستنبط ما تحتاج إليه من تتمات لتكون جملاً مفيدة."} },
+  contextual_error: { en:{name:"Contextual Error", desc:"Identify words or expressions that are inconsistent with the meaning of a sentence or short text."},
+                     ar:{name:"الخطأ السياقي", desc:"أدرك الخطأ السياقي في الجمل والنصوص القصيرة."} },
+  reading_comprehension: { en:{name:"Reading Comprehension", desc:"Understand and analyze the reading passage shown alongside, then answer questions about its content."},
+                     ar:{name:"استيعاب المقروء", desc:"افهم نص القراءة المعروض وحلّله، ثم أجب عن الأسئلة المتصلة بمضمونه."} },
+  arithmetic: { en:{name:"Arithmetic", desc:"Number operations, ratios, percentages, and estimation."}, ar:{name:"حساب", desc:"عمليات حسابية، نسب، مئويات، وتقدير."} },
+  geometry: { en:{name:"Geometry", desc:"Shapes, angles, areas, perimeters, and the coordinate system."}, ar:{name:"هندسة", desc:"أشكال هندسية، زوايا، مساحات، ومحيطات."} },
+  algebra: { en:{name:"Algebra", desc:"Equations, inequalities, and algebraic expressions."}, ar:{name:"جبر", desc:"معادلات ومتباينات وتبسيط تعبيرات جبرية."} },
+  data_analysis: { en:{name:"Data Analysis", desc:"Interpreting bar charts, pie charts, line graphs, tables, and Venn diagrams."}, ar:{name:"تفسير البيانات", desc:"قراءة الرسوم البيانية والجداول والدوائر النسبية."} },
+};
+
+// Underline markup: __word__ -> <u>word</u>
+function mdUnderline(s){ return s.replace(/__(.+?)__/g, '<u>$1</u>'); }
+// Wrap raw numbers/math tokens (outside \(...\) blocks) so they stay LTR inside RTL text
+function wrapNumbersLTR(s){
+  // Walk the string and skip over any <span class='mx'...>...</span> (balancing
+  // nested <span> tags properly) or <sup>...</sup> block untouched, since that
+  // content is already-built math HTML (including entities like &#8730;) that
+  // must never be touched by the plain-prose digit-wrapper below.
+  let out = '', i = 0; const n = s.length;
+  const numRe = /([0-9٠-٩][0-9٠-٩.,%٪:\/\-\+×÷=<>٫ ]*[0-9٠-٩%٪])/g;
+  while(i < n){
+    if(s.startsWith("<span class='mx'", i) || s.startsWith('<span class="mx"', i)){
+      let depth = 1, j = s.indexOf('>', i) + 1;
+      while(depth > 0 && j < n){
+        const nextOpen = s.indexOf('<span', j);
+        const nextClose = s.indexOf('</span>', j);
+        if(nextClose === -1){ j = n; break; }
+        if(nextOpen !== -1 && nextOpen < nextClose){ depth++; j = s.indexOf('>', nextOpen) + 1; }
+        else { depth--; j = nextClose + 7; }
+      }
+      out += s.slice(i, j); i = j;
+    } else if(s.startsWith('<sup>', i)){
+      const close = s.indexOf('</sup>', i);
+      const end = close === -1 ? n : close + 6;
+      out += s.slice(i, end); i = end;
+    } else {
+      const c1 = s.indexOf("<span class='mx'", i), c2 = s.indexOf('<span class="mx"', i), c3 = s.indexOf('<sup>', i);
+      const cands = [c1,c2,c3].filter(x=>x!==-1);
+      const next = cands.length ? Math.min(...cands) : n;
+      out += s.slice(i, next).replace(numRe, '<span class="ltr-num">$1</span>');
+      i = next;
+    }
+  }
+  return out;
+}
+
+// ====== TEST E (English/Mixed Official Trial Form) ======
+const TEST_E = {
+  id:'E', label:'Official Trial · English/Mixed Form', lang:'en',
+  sections:[
+    {name:'Section 1', time:25*60, qs:[
+      {n:1,domain:'sentence_completion',text:"Before starting out on a long trip by car, it is a good idea to make sure the __spare__ tire is in good condition.\nChoose the word closest in meaning to the underlined word:",opts:["used","new","extra","old"],ans:2},
+      {n:2,domain:'sentence_completion',text:"__Nation__",opts:["province","country","district","region"],ans:1},
+      {n:3,domain:'sentence_completion',text:"Parents don't like their children to go out with their __peers__ so often.",opts:["classmates","partners","tutors","adversaries"],ans:0},
+      {n:4,domain:'sentence_completion',text:"We have a lot of work to do in a very short __span__ of time. So we are working under a very tight schedule.",opts:["period","constraint","limit","notice"],ans:0},
+      {n:5,domain:'sentence_completion',text:"Sorry to be so __grouchy__ today; I had a very bad experience this morning.",opts:["tired","angry","fuzzy","loose"],ans:1},
+      {n:6,domain:'sentence_completion',text:"No one can………. that Ghazi is a good student; he has made ………. grades during his four years at the university.",opts:["refuse – low","say – inferior","accept – high","deny – good"],ans:3},
+      {n:7,domain:'sentence_completion',text:"Establishing a new ………. requires a lot of patience, planning, and sufficient money; a new company is not ………. overnight.",opts:["network – forgotten","school – planned","business – born","club – remembered"],ans:2},
+      {n:8,domain:'sentence_completion',text:"My father loves ……….; when he goes shopping, looking for ………. is his favorite thing to do.",opts:["reading – books","painting – goods","drawing – gloves","writing – items"],ans:0},
+      {n:9,domain:'sentence_completion',text:"He has had several job ………., but hasn't had an offer that he finds really ……….",opts:["meetings – interesting","inquiries – healthy","interactions – precise","interviews – exciting"],ans:3},
+      {n:10,domain:'sentence_completion',text:"It is very important to attend class regularly; being ………. is usually seen as a ………. of motivation.",opts:["late – means","present – shortage","tardy – sign","absent – lack"],ans:3},
+      {n:11,domain:'sentence_completion',text:"Although I had wonderful experiences during my ………., I was ………. to return home.",opts:["sabbatical – unhappy","travel – sorry","vacation – happy","departure – reluctant"],ans:2},
+      {n:12,domain:'sentence_completion',text:"The development of ………. medicine led to abandoning many traditional treatments; nowadays a new approach is to………. the wisdom of traditional medicine.",opts:["useful – explode","contemporary – prepare","ancient – prevent","modern – explore"],ans:3},
+      {n:13,domain:'sentence_completion',text:"Idealists often have………. with being ………. in their everyday lives.",opts:["experience – pragmatic","difficulty – practical","knowledge – operative","hardship – indifferent"],ans:1},
+      {n:14,domain:'verbal_analogy',text:"CUT : NAILS ::",opts:["remove : bark","restore : feathers","polish : toes","trim : hair"],ans:3},
+      {n:15,domain:'verbal_analogy',text:"PUSH : PULL ::",opts:["go : leave","put : poll","win : lose","come : bring"],ans:2},
+      {n:16,domain:'verbal_analogy',text:"FLOOR : RUG ::",opts:["turf : earth","sand : land","shade : window","bed : sheet"],ans:3},
+      {n:17,domain:'verbal_analogy',text:"MONEY : WALLET ::",opts:["box : jewelry","gold : stocks","papers : folder","words : ink"],ans:2},
+      {n:18,domain:'verbal_analogy',text:"SHIRT : BUTTONS ::",opts:["wound : stitches","belts : pants","pins : staples","threads : needles"],ans:0},
+      {n:19,domain:'verbal_analogy',text:"BANK : MONEY ::",opts:["stars : night","brain : ideas","leaves : papers","shop : mall"],ans:1},
+      {n:20,domain:'reading_comprehension',passageId:'grey',text:"Dr. Grey used to work as a medical doctor in:",opts:["Africa","Angola","southern England","South Africa"],ans:2},
+      {n:21,domain:'reading_comprehension',passageId:'grey',text:"The main role of \"Doctors Without Frontiers\" is to:",opts:["supply food for the poor","treat ill people","provide shelter for people","train families"],ans:1},
+      {n:22,domain:'reading_comprehension',passageId:'grey',text:"Dr. Grey went to Angola because she felt:",opts:["she was not comfortable enough in England","her work was not too exciting","she was working for long hours","she did not have a good career in England"],ans:1},
+      {n:23,domain:'reading_comprehension',passageId:'grey',text:"Dr. Grey has been working in Angola:",opts:["for eight months","for years","for decades","since 1986"],ans:0},
+      {n:24,domain:'reading_comprehension',passageId:'grey',text:"The standards of health care in Angola were poor because of:",opts:["lack of medicine","shortage of supplies","militant groups","need for more hospitals"],ans:2},
+      {n:25,domain:'reading_comprehension',passageId:'grey',text:"Working in Angola gave Dr. Grey a lot of:",opts:["satisfaction","problems","fear","ideas"],ans:0},
+      {n:26,domain:'reading_comprehension',passageId:'grey',text:"When Dr. Grey leaves Angola, she plans to:",opts:["work for another organization","be away for a month","go to another continent","come back to Africa"],ans:3},
+    ]},
+    {name:'Section 2', time:25*60, qs:[
+      {n:27,domain:'arithmetic',text:"Determine which numbers fit the last two spaces: 20, 25, 29, 34, 38, ___, ___",opts:["42, 46","42, 47","43, 46","43, 47"],ans:3},
+      {n:28,domain:'arithmetic',text:"If 20% of an amount of money is 16 Riyals, how much is 25% of the same amount?",opts:["40","30","20","10"],ans:2},
+      {n:29,domain:'arithmetic',text:"\<span class='mx' dir='ltr'><span class='frac'><span class='num'>400</span><span class='den'>10</span></span> + <span class='frac'><span class='num'>4</span><span class='den'>100</span></span> + <span class='frac'><span class='num'>4</span><span class='den'>1000</span></span> =</span>",opts:["40.044","40.404","40.440","40.444"],ans:0},
+      {n:30,domain:'arithmetic',text:"\<span class='mx' dir='ltr'><span class='root'><span class='radsym'>&#8730;</span><span class='radicand'>(<span class='frac'><span class='num'>2</span><span class='den'>3</span></span>)<sup>2</sup></span></span> &times; <span class='root'><span class='radsym'>&#8730;</span><span class='radicand'><span class='frac'><span class='num'>9</span><span class='den'>4</span></span></span></span> =</span>",opts:["2","1","Zero","-1"],ans:1},
+      {n:31,domain:'arithmetic',text:"\<span class='mx' dir='ltr'><span class='root'><sup class='rootidx'>3</sup><span class='radsym'>&#8730;</span><span class='radicand'>27 &times; 64</span></span> =</span>",opts:["12","36","108","192"],ans:0},
+      {n:32,domain:'arithmetic',text:"A man bought a game for 74 Riyals and a book for 50 Riyals less than the value of the game. How much did he pay for both?",opts:["12","24","98","124"],ans:2},
+      {n:33,domain:'geometry',text:"Line gf joins the midpoints of sides ab and ac; line ed joins the midpoints of ag and af. What is the ratio of ae to ac?",opts:["2/3","1/8","1/3","1/4"],ans:3},
+      {n:34,domain:'geometry',text:"A faucet pours 500 liters/min into a rectangular tank with sides 1, 2, 3 meters. How many minutes does it take to fill the tank?",opts:["10","12","14","15"],ans:1},
+      {n:35,domain:'geometry',text:"Two straight lines cross, forming a 50° angle on one side. What is the total of \<span class='mx' dir='ltr'>x+y</span> (the marked angles) in the figure?",opts:["130","160","230","260"],ans:2},
+      {n:36,domain:'algebra',text:"If \<span class='mx' dir='ltr'><span class='frac'><span class='num'>3</span><span class='den'>5</span></span> = <span class='frac'><span class='num'>x</span><span class='den'>4</span></span></span>, then \<span class='mx' dir='ltr'>x</span> equals:",opts:["4.2","2.4","5/12","20/3"],ans:1},
+      {n:37,domain:'algebra',text:"If \<span class='mx' dir='ltr'>x+y=z</span> and \<span class='mx' dir='ltr'>x=y</span>, which of the following statements is FALSE?",opts:["\<span class='mx' dir='ltr'>2x+2y=2z</span>","\<span class='mx' dir='ltr'>z-y=2x</span>","\<span class='mx' dir='ltr'>x-z=y-z</span>","\<span class='mx' dir='ltr'>x=<span class='frac'><span class='num'>z</span><span class='den'>2</span></span></span>"],ans:1},
+      {n:38,domain:'arithmetic',text:"Water is priced by consumption tier · each tier's rate applies only to the portion of usage that falls in it, like a tax bracket: 1–50 m³ at 10 Fils/m³, 51–100 m³ at 20 Fils/m³, 101–200 m³ at 50 Fils/m³, 201–300 m³ at 70 Fils/m³. So a 300 m³ bill is charged 10 Fils for the first 50 m³, 20 Fils for the next 50, 50 Fils for the next 100, and 70 Fils for the last 100 · added together, not one flat rate for the whole 300. What is the total cost in Dinars (1 Dinar = 1000 Fils)?",opts:["11.5","12.5","13.0","13.5"],ans:3},
+      {n:39,domain:'arithmetic',text:"32% of 250 equals:",opts:["64","80","88","96"],ans:1},
+      {n:40,domain:'geometry',text:"A square's perimeter is 20 cm. What is the radius of its circumscribed circle?",opts:["2/5","\<span class='mx' dir='ltr'><span class='frac'><span class='num'><span class='root'><span class='radsym'>&#8730;</span><span class='radicand'>2</span></span></span><span class='den'>5</span></span></span>","\<span class='mx' dir='ltr'><span class='frac'><span class='num'>5<span class='root'><span class='radsym'>&#8730;</span><span class='radicand'>2</span></span></span><span class='den'>2</span></span></span>","\<span class='mx' dir='ltr'>5<span class='root'><span class='radsym'>&#8730;</span><span class='radicand'>2</span></span></span>"],ans:2},
+      {n:41,domain:'data_analysis',chartId:'students',text:"The sector with the least percentage of students in 2001–2002 represents:",opts:["university students","intermediate students","secondary students","kindergarten students"],ans:0},
+      {n:42,domain:'data_analysis',chartId:'students',text:"The three largest sectors in increasing order are:",opts:["elementary–kindergarten–intermediate","university–secondary–intermediate","elementary–intermediate–secondary","intermediate–elementary–kindergarten"],ans:3},
+      {n:43,domain:'data_analysis',chartId:'students',text:"If the total number of students in 2001–2002 is 120,000, the number of university students is:",opts:["6000","5000","4000","3000"],ans:0},
+      {n:44,domain:'data_analysis',chartId:'students',text:"The ratio of intermediate students to elementary students as a percentage is approximately:",opts:["10%","30%","60%","90%"],ans:3},
+      {n:45,domain:'algebra',text:"If the price of 3 pens and 1 pencil is 7 Riyals, and the price of 1 notebook and 3 pens is 10 Riyals, compare:\nColumn A: The price of a pencil | Column B: The price of a notebook",opts:["A is greater","B is greater","The two are equal","Not enough info"],ans:1},
+      {n:46,domain:'algebra',text:"Compare:\nColumn A: \<span class='mx' dir='ltr'>(5-<span class='root'><span class='radsym'>&#8730;</span><span class='radicand'>2</span></span>)(<span class='root'><span class='radsym'>&#8730;</span><span class='radicand'>3</span></span>-5)</span> | Column B: \<span class='mx' dir='ltr'>(<span class='root'><span class='radsym'>&#8730;</span><span class='radicand'>2</span></span>-5)(5-<span class='root'><span class='radsym'>&#8730;</span><span class='radicand'>3</span></span>)</span>",opts:["A is greater","B is greater","The two are equal","Not enough info"],ans:2},
+      {n:47,domain:'arithmetic',text:"Compare:\nColumn A: \<span class='mx' dir='ltr'>9-0.004</span> | Column B: \<span class='mx' dir='ltr'>9-0.0044</span>",opts:["A is greater","B is greater","The two are equal","Not enough info"],ans:0},
+      {n:48,domain:'algebra',text:"If \<span class='mx' dir='ltr'>8<sup>4x</sup> = 4<sup>6y</sup></span>, compare:\nColumn A: \<span class='mx' dir='ltr'>x</span> | Column B: \<span class='mx' dir='ltr'>y</span>",opts:["A is greater","B is greater","The two are equal","Not enough info"],ans:2},
+    ]},
+    {name:'Section 3', time:25*60, qs:[
+      {n:49,domain:'sentence_completion',text:"She decided to ask her husband for new furniture in the sitting room. At the very least, she felt that some new __couches__ to replace the old ones were necessary.",opts:["sofas","chairs","carpets","cushions"],ans:0},
+      {n:50,domain:'sentence_completion',text:"My mother used to do my __laundry__ all the time, but now I have to do my own or pay someone to do it for me.",opts:["torn clothes","dirty clothes","clean clothes","old clothes"],ans:1},
+      {n:51,domain:'sentence_completion',text:"A basic sense of discipline is necessary to make progress in any worthwhile __goal__ in life.",opts:["aim","destiny","job","habit"],ans:0},
+      {n:52,domain:'sentence_completion',text:"In a horse race contestants must jump all __hurdles__ before they reach the finish line.",opts:["staffs","turns","barriers","grounds"],ans:2},
+      {n:53,domain:'sentence_completion',text:"While Khalid seems ………. and shy, he often spends time with his ……….",opts:["open – family","reserved – critics","calm – adversaries","quiet – friends"],ans:3},
+      {n:54,domain:'sentence_completion',text:"As people grow older, it is………. for their memory to become less ……….",opts:["usual – sharp","allowed – active","good – well-formed","likely – eager"],ans:0},
+      {n:55,domain:'sentence_completion',text:"Compared to the ………., young people have a different sense of time; to them the ………. seems to have no limitations.",opts:["children – past","ancients – day","adults – century","elderly – future"],ans:3},
+      {n:56,domain:'sentence_completion',text:"In ancient times, the rhythm of life was ………. by sunrise and sunset; now we have electricity and can schedule our activities well into the ………. of night.",opts:["determined – darkness","settled – brightness","prescribed – depth","revived – twilight"],ans:0},
+      {n:57,domain:'sentence_completion',text:"Libraries and bookstores are similar in that they are both full of books; however, to ………. a book one must go to a bookstore.",opts:["loan","write","buy","lend"],ans:2},
+      {n:58,domain:'sentence_completion',text:"Before the boom brought on by the ………., life in the Gulf countries was……….; compared to those times, we live in the lap of luxury now.",opts:["drilling for water – extremely poor","discovery of oil – very harsh","building of cities – mainly in tent","opening of malls – usually limited"],ans:1},
+      {n:59,domain:'verbal_analogy',text:"ANIMALS : HERD ::",opts:["fish : sharks","army : regiment","cattle : camels","players : team"],ans:3},
+      {n:60,domain:'verbal_analogy',text:"BOOK : WRITER ::",opts:["poetry : critic","binder : paper","designer : dress","home : builder"],ans:3},
+      {n:61,domain:'verbal_analogy',text:"STRONG : POWERFUL ::",opts:["plastic : elastic","pure : transparent","wet : moist","heavy : tall"],ans:2},
+      {n:62,domain:'verbal_analogy',text:"SALT : SEA ::",opts:["desert : sand","grass : rug","carpet : skin","milk : cow"],ans:3},
+      {n:63,domain:'verbal_analogy',text:"HEAD : HAT ::",opts:["gloves : hands","cold : coat","nails : fingers","pen : cap"],ans:3},
+      {n:64,domain:'verbal_analogy',text:"WEEK : DAY ::",opts:["night : morning","watch : hour","hospital : lab","letter : envelope"],ans:2},
+      {n:65,domain:'verbal_analogy',text:"VEGETABLES : VITAMINS ::",opts:["carbohydrate : fat","book : knowledge","minerals : proteins","news : television"],ans:1},
+      {n:66,domain:'verbal_analogy',text:"BRANCH : LEAVES ::",opts:["ocean : sea","country : cities","numbers : charts","colleges : university"],ans:1},
+      {n:67,domain:'verbal_analogy',text:"GENERAL : SPECIFIC ::",opts:["popular : dynamic","special : fantastic","real : fictional","singular : similar"],ans:2},
+      {n:68,domain:'reading_comprehension',passageId:'football',text:"The article was written for a:",opts:["TV program","radio show","newspaper","magazine"],ans:2},
+      {n:69,domain:'reading_comprehension',passageId:'football',text:"The writer says that in recent years:",opts:["not as many people go to watch football matches as before","fewer people support football teams","not many football matches are played nowadays","youths do not attend football matches nowadays"],ans:0},
+      {n:70,domain:'reading_comprehension',passageId:'football',text:"The match described in this article was:",opts:["smooth","tough","good","boring"],ans:3},
+      {n:71,domain:'reading_comprehension',passageId:'football',text:"When attending a football match, the writer suggests that one should NOT:",opts:["take his child to see it","leave his child by himself","ask his child to stand","let his child cheer any team"],ans:1},
+      {n:72,domain:'reading_comprehension',passageId:'football',text:"The writer thinks that one way of bringing back crowds is to:",opts:["separate children from their families","make football grounds a more secure place","unite children with their families","use much softer penalties"],ans:1},
+      {n:73,domain:'reading_comprehension',passageId:'football',text:"Youths might behave in a good way if:",opts:["players had more self-control","players made planned attacks","football matches were less boring","referees were a little more tense"],ans:0},
+      {n:74,domain:'reading_comprehension',passageId:'football',text:"The article says that in the last six games one major team:",opts:["scored six goals","did not score a single goal","scored more goals","did not score enough goals"],ans:1},
+    ]},
+    {name:'Section 4', time:25*60, qs:[
+      {n:75,domain:'arithmetic',text:"A bucket with a capacity of 0.004 m³ is used to fill a water tank with a capacity of 4 m³. How many buckets are needed?",opts:["1600","1000","160","100"],ans:1},
+      {n:76,domain:'algebra',text:"If Mohammed is half as old as Saad, and Saad is three times as old as Fahad, what is the ratio of Fahad's age to Mohammed's age?",opts:["3/2","1/2","1/3","2/3"],ans:3},
+      {n:77,domain:'geometry',text:"What is the perimeter in centimeters of a staircase-shaped figure with base 7 cm and total height 5 cm?",opts:["24","26","28","30"],ans:0},
+      {n:78,domain:'data_analysis',text:"The average IQ of four people is 110. If three of them have an average IQ of 105, what is the IQ of the fourth person?",opts:["105","110","118","125"],ans:3},
+      {n:79,domain:'arithmetic',text:"\<span class='mx' dir='ltr'>2<sup>8/10</sup> =</span>",opts:["\<span class='mx' dir='ltr'>2<sup>0.8</sup></span>","\<span class='mx' dir='ltr'>2<sup>3.2</sup></span>","\<span class='mx' dir='ltr'>2<sup>1.25</sup></span>","\<span class='mx' dir='ltr'>2<sup>0.2</sup></span>"],ans:0},
+      {n:80,domain:'algebra',text:"What values of \<span class='mx' dir='ltr'>x</span> satisfy the equation \<span class='mx' dir='ltr'>|3x| = 15</span>?",opts:["+3, -3","+3, +5","-5, -3","+5, -5"],ans:3},
+      {n:81,domain:'arithmetic',text:"A sum of money is divided among three poor persons in the ratio 1:2:3. If the third person received 120 Riyals more than the first, how much did each receive?",opts:["30:90:150","40:80:160","60:120:180","90:180:210"],ans:2},
+      {n:82,domain:'arithmetic',text:"A classroom has 18 chairs in three rows. Each row has one more chair than the row in front of it. How many chairs does the back row have?",opts:["8","7","6","5"],ans:1},
+      {n:83,domain:'geometry',text:"In the figure, \<span class='mx' dir='ltr'>AD=DE</span>, \<span class='mx' dir='ltr'>DC=3</span> cm, \<span class='mx' dir='ltr'>AE=2<span class='root'><span class='radsym'>&#8730;</span><span class='radicand'>2</span></span></span> cm. What is the value of \<span class='mx' dir='ltr'>CB</span> in centimeters?",opts:["\<span class='mx' dir='ltr'>5<span class='root'><span class='radsym'>&#8730;</span><span class='radicand'>2</span></span></span>","5","\<span class='mx' dir='ltr'>2<span class='root'><span class='radsym'>&#8730;</span><span class='radicand'>5</span></span></span>","\<span class='mx' dir='ltr'><span class='root'><span class='radsym'>&#8730;</span><span class='radicand'>5</span></span></span>"],ans:1},
+      {n:84,domain:'algebra',text:"If \<span class='mx' dir='ltr'><span class='frac'><span class='num'>x</span><span class='den'>27</span></span> = <span class='frac'><span class='num'>3</span><span class='den'>x</span></span></span>, then \<span class='mx' dir='ltr'>x =</span>",opts:["±7","±8","±9","±10"],ans:2},
+      {n:85,domain:'geometry',text:"A square with center \<span class='mx' dir='ltr'>c</span>; \<span class='mx' dir='ltr'>d</span> is the midpoint of the bottom side and side length is \<span class='mx' dir='ltr'>x</span>. What is the length of \<span class='mx' dir='ltr'>cd</span>?",opts:["\<span class='mx' dir='ltr'>x/4</span>","\<span class='mx' dir='ltr'>x/2</span>","\<span class='mx' dir='ltr'>x</span>","\<span class='mx' dir='ltr'>4x</span>"],ans:1},
+      {n:86,domain:'algebra',text:"If \<span class='mx' dir='ltr'>x<sup>2</sup>-25=0</span> and \<span class='mx' dir='ltr'>y<sup>2</sup>-36=0</span>, what is the absolute value of the product \<span class='mx' dir='ltr'>x &middot; y</span>?",opts:["1","11","25","30"],ans:3},
+      {n:87,domain:'arithmetic',text:"If \<span class='mx' dir='ltr'>250  dm<sup>3</sup> + x  dm<sup>3</sup> = 1  m<sup>3</sup></span>, then \<span class='mx' dir='ltr'>x</span> equals:",opts:["750","650","550","450"],ans:0},
+      {n:88,domain:'geometry',text:"In the figure, \<span class='mx' dir='ltr'>da=3</span> cm, \<span class='mx' dir='ltr'>ab=4</span> cm, and the angle at \<span class='mx' dir='ltr'>c</span> is 30°. What is the length of side \<span class='mx' dir='ltr'>bc</span>?",opts:["6","8","9","10"],ans:3},
+      {n:89,domain:'algebra',text:"If \<span class='mx' dir='ltr'><span class='frac'><span class='num'>1</span><span class='den'>2x+1</span></span> = <span class='frac'><span class='num'>1</span><span class='den'>2+x</span></span></span>, then \<span class='mx' dir='ltr'>x</span> equals:",opts:["-2","Zero","1","2"],ans:2},
+      {n:90,domain:'arithmetic',text:"A woman bought three bottles of perfume priced equally. She paid half the original price for the second bottle and a quarter of the price for the third. If she paid a total of 700 Riyals, what was the original price of each bottle?",opts:["500","400","300","200"],ans:1},
+      {n:91,domain:'geometry',text:"A square palm tree plantation is surrounded by a fence 400 meters long. The trees are arranged in a square pattern; the distance between each adjacent pair of trees is 5 meters, and the distance between the fence and the trees is also 5 meters. How many trees are in the plantation?",opts:["324","342","361","382"],ans:2},
+      {n:92,domain:'arithmetic',text:"\<span class='mx' dir='ltr'><span class='frac'><span class='num'>1+<span class='frac'><span class='num'>1</span><span class='den'>2</span></span></span><span class='den'>1+<span class='frac'><span class='num'>1</span><span class='den'>1+<span class='frac'><span class='num'>1</span><span class='den'>2</span></span></span></span></span></span> =</span>",opts:["5/2","10/9","9/10","2/5"],ans:2},
+      {n:93,domain:'data_analysis',text:"If one Euro equals 5.1 Riyals, compare:\nColumn A: 62 Riyals | Column B: 12 Euros",opts:["A is greater","B is greater","The two are equal","Not enough info"],ans:0},
+      {n:94,domain:'algebra',text:"Compare:\nColumn A: \<span class='mx' dir='ltr'>x<sup>2</sup>+y<sup>2</sup></span> | Column B: \<span class='mx' dir='ltr'>x<sup>2</sup>-y<sup>2</sup></span>",opts:["A is greater","B is greater","The two are equal","Not enough info"],ans:3},
+      {n:95,domain:'algebra',text:"If \<span class='mx' dir='ltr'>m,n</span> are positive integers, compare:\nColumn A: \<span class='mx' dir='ltr'><span class='frac'><span class='num'>1</span><span class='den'>m+n</span></span></span> | Column B: \<span class='mx' dir='ltr'><span class='frac'><span class='num'>1</span><span class='den'>m</span></span>+<span class='frac'><span class='num'>1</span><span class='den'>n</span></span></span>",opts:["A is greater","B is greater","The two are equal","Not enough info"],ans:1},
+      {n:96,domain:'algebra',text:"If \<span class='mx' dir='ltr'>3x=2y</span> and \<span class='mx' dir='ltr'>y&ne;0</span>, compare:\nColumn A: \<span class='mx' dir='ltr'><span class='frac'><span class='num'>x</span><span class='den'>y</span></span></span> | Column B: \<span class='mx' dir='ltr'><span class='frac'><span class='num'>1</span><span class='den'>2</span></span></span>",opts:["A is greater","B is greater","The two are equal","Not enough info"],ans:0},
+    ]},
+  ],
+  passages:{
+    grey: `(1) Dr. Dianne Grey was a general practitioner. She used to work in the south of England. She was a successful doctor with a good career and a comfortable life. Treating patients with routine medical problems such as colds, sore throats, and so on appeared to her to be rather boring. She felt that she could do something more important.\n\n(2) She decided to join "Doctors Without Frontiers" which is a volunteer medical organization that provides emergency health care in several African countries. For the last eight months she has been living in Angola.\n\n(3) Her organization has been sending medical teams and equipment to Angola since 1986. With militant groups fighting each other, the standards of health care there have grown worse and worse. Outside the cities there are not enough hospitals, doctors, or nurses, and disease has become a major problem.\n\n(4) Dr. Grey has been working hard to improve conditions there. She has treated thousands of patients and has trained local people to be health care workers. Although she has never felt so useful before, she is leaving Angola but with a determination to return as soon as possible.`,
+    football: `A sports reporter once wrote the following article for a London evening newspaper:\n\n(2) When I was a young reporter, my father made sure I had a place at the front so that I could have a good view of the football match. If you let your child stand alone in the wrong place these days, he would probably be hurt or even killed. He would certainly learn some of the worst language. Football stadiums are not suitable for families anymore. If a football ground were a safer and more respectable place, some of them might be persuaded to return.\n\n(3) Today's game was boring, because both teams appeared to play only for a draw. If both teams played to win, the crowds would return. What happened to scorelines like 5-5 and 4-2? It is unbelievable that one major club has not scored in the last six games. There would surely be bigger crowds if there were more goals and fewer fouls.\n\n(4) We cannot really blame the youths who fight in the stadium. If their heroes on the field used less offensive language and had more self-control, the youths themselves would probably behave in a more civilized manner. If referees imposed harsher penalties, players would think more carefully before committing an offence.`,
+  },
+  charts:{
+    students: {type:'pie', title:'Student distribution in school stages during 2001–2002', data:[
+      {label:'Kindergarten',val:35},{label:'Elementary',val:27},{label:'Intermediate',val:24},{label:'Secondary',val:9},{label:'University',val:5}
+    ]}
+  }
+};
+
+// ====== TEST A (Arabic Scientific Official Trial Form) ======
+const TEST_A = {
+  id:'A', label:'الاختبار الرسمي التجريبي · علمي', lang:'ar',
+  sections:[
+    {name:'القسم الأول', time:25*60, qs:[
+      {n:1,domain:'arithmetic',text:"تقطع سيارة ٤٨٠ كلم فتستهلك ٨٠ لترًا من البنزين، فما عدد لترات البنزين التي تحتاجها السيارة لقطع ٦٠٠ كلم؟",opts:["120","100","80","60"],ans:1},
+      {n:2,domain:'arithmetic',text:"أقرب قيمة للمقدار \<span class='mx' dir='ltr'><span class='root'><span class='radsym'>&#8730;</span><span class='radicand'>٣.٩<sup>٢</sup> + ١٩</span></span></span> هي:",opts:["4","5","6","7"],ans:2},
+      {n:3,domain:'data_analysis',chartId:'land',text:"أي الجمل الآتية غير صحيح؟",opts:["ملحق الضيوف والمسجد أكثر تقاربًا في المساحة","مساحة الحديقة تساوي خُمس مساحة الأرض","الفيلا والمرآب هما الأكثر تباعدًا في المساحة","المرآب هو الأصغر مساحة"],ans:1},
+      {n:4,domain:'data_analysis',chartId:'land',text:"ما نسبة مساحة الفيلا إلى مساحة الأرض؟",opts:["57.5%","56%","54.5%","53%"],ans:1},
+      {n:5,domain:'arithmetic',text:"إذا أردنا تخزين علب صابون حجم الواحدة منها ٠.٠٦م³ في مستودع سعته ٤٨م³، فكم علبة يمكن تخزينها فيه؟",opts:["800","700","500","600"],ans:0},
+      {n:6,domain:'arithmetic',text:"ما العدد الذي يزيد نصفه على ربعه بمقدار ١٥؟",opts:["60","45","40","35"],ans:0},
+      {n:7,domain:'arithmetic',text:"يملك بائع تمور ٢٦٤ كجم من التمر، وزّعها في ١٥٠ كيسًا، بعضها وزنه ١ كجم والباقي وزنه ٢ كجم. فما عدد العبوات المكوّن وزنها من ٢ كجم؟",opts:["52","88","96","114"],ans:3},
+      {n:8,domain:'arithmetic',text:"ما عدد الأخماس في ٤٥%؟",opts:["2¾","2½","2¼","2"],ans:2},
+      {n:9,domain:'geometry',text:"في الشكل، القطعة المستقيمة ن و تصل بين منتصفي الضلعين أ ب و أ جـ، والقطعة المستقيمة د هـ تصل بين منتصفي الضلعين أ ن و أ و. فما نسبة \<span class='mx' dir='ltr'><span class='frac'><span class='num'>٢(نب)+٢(هو)</span><span class='den'>أن+أو</span></span></span>؟",opts:["1/4","1/3","1/2","1"],ans:3},
+      {n:10,domain:'arithmetic',text:"لدينا ٧٦ كرسيًا، وأردنا توزيعها على ٢٤ غرفة بالتساوي، فكم كرسيًا يبقى؟",opts:["6","4","3","2"],ans:1},
+      {n:11,domain:'algebra',text:"لدى حسام حزمة من الأوراق النقدية مكونة من فئتين: ٥ ريالات و ١٠ ريالات، ومجموعها ١٢٠ ورقة؛ فإذا كان عدد الأوراق ذات فئة ١٠ ريالات يساوي أمثال عدد الأوراق ذات فئة ٥ ريالات، فما مقدار هذا المبلغ؟",opts:["1100","1000","950","900"],ans:0},
+      {n:12,domain:'contextual_error',text:"ما أقل تفكيرنا فيما لدينا! وما __أكثر__ تفكيرنا فيما نملكه!\nحدد الكلمة المكتوبة بخط غليظ التي لا يتفق معناها مع المعنى العام للجملة.",opts:["أقل","لدينا","أكثر","نملكه"],ans:3},
+      {n:13,domain:'contextual_error',text:"ما زال كثير من الناس لا يهمه إلا نفسه، فلا يحترم حقوق الآخرين، بل __يحافظ__ عليها.",opts:["الناس","نفسه","يحترم","يحافظ"],ans:3},
+      {n:14,domain:'contextual_error',text:"من الإنصاف رغبة البعض أن يتقدم عند الإشارة ولو كان على حساب __إغلاق__ منفذ الآخرين.",opts:["الإنصاف","الإشارة","إغلاق","منفذ"],ans:0},
+      {n:15,domain:'contextual_error',text:"نعلم أن تربية الأبناء أمانة ومسؤولية __يهتم__ بها البعض بإهمال أو سذاجة.",opts:["نعلم","أمانة","يهتم","باهمال"],ans:2},
+      {n:16,domain:'sentence_completion',text:"الدين أعتى عصمة والأمن أفضل نعمة.\nاختر مرادف الكلمة المسطر تحتها: __أعتى__",opts:["عصمة","أعتى","الأمن","أفضل"],ans:0},
+      {n:17,domain:'sentence_completion',text:"كان كثير من البيوت في البلاد العربية يبنى من الطين، ومع أنها تتعرّض......، فما يزال العديد منها قائمًا وآمنًا، ويحسب الناس أن يلجؤوا إليها لاسيما في مواسم الحر.",opts:["للبقاء","للماضي","للسكن","للتشقق"],ans:3},
+      {n:18,domain:'sentence_completion',text:"أحسن الكلام ما كان......... قليله عن كثيره.",opts:["يقيك","يحميك","يغنيك","يبعدك"],ans:2},
+      {n:19,domain:'sentence_completion',text:"قال حكيم: أَحِبَّ ......... لقومك يحبُّوك، وتواضع لهم يرفعوك، وابسط لهم......... يطيعوك.",opts:["زمامك – وجهك","جانبك – يدك","حديثك – فراشك","مركبك – دراهمك"],ans:1},
+      {n:20,domain:'sentence_completion',text:"تحتل البلاد العربية مكانة......... في النهضة الثقافية عمومًا، وفي الشعر والآداب المعاصرة خاصة، ولكننا نتطلع لمزيد من......... في هذا المجال.",opts:["مرموقة – الإسهام","نامية – التضخم","مختلفة – النهضة","متواضعة – الإنتاج"],ans:0},
+      {n:21,domain:'sentence_completion',text:"ثورة تقنية المعلومات والاتصالات......... إبداع إنساني مشترك، لكن......... البشرية تدفع إلى الاستحواذ على ثمارها وحرمان الآخرين منها.",opts:["نتيجة – السلطة","انعكاس – الإرادة","صدى – النزعة","نتاج – الأنانية"],ans:3},
+      {n:22,domain:'sentence_completion',text:"الانطباع......... الذي تتركه لدى الآخرين من أول مرّة، لا يمكن تكراره، ولن......... بفرصة ثانية لعمله.",opts:["المتميز – تنشغل","السيئ – تمر","الجيد – تحظى","المفاجئ – ترضى"],ans:2},
+      {n:23,domain:'verbal_analogy',text:"خبز : عفن ::",opts:["صَمَم : سَمْع","ماء : تلوث","تسوس : أسنان","كساد : زراعة"],ans:1},
+      {n:24,domain:'verbal_analogy',text:"شراع : سفينة ::",opts:["دقيقة : ثانية","بحر : ماء","بطارية : ساعة","حصان : مضمار"],ans:2},
+    ]},
+    {name:'القسم الثاني', time:25*60, qs:[
+      {n:25,domain:'arithmetic',text:"ما الحد التالي في النمط: ١/٣، ١/٧، ٣/١٠، ٢/٧، ٥/٩، ٣/٧، ٧/٩، ...؟",opts:["11/13","9/11","5/6","4/5"],ans:3},
+      {n:26,domain:'arithmetic',text:"في أحد الأندية ١٥ لاعبًا، شُكِّل منهم فريقان (أ) و(ب)، عدد الفريق (أ) ١٠ والفريق (ب) ٨؛ أي أن هناك لاعبين شاركوا في الفريقين، فما عددهم؟",opts:["8","7","4","3"],ans:3},
+      {n:27,domain:'geometry',text:"إذا وقعت مدينة ما في جنوب شرق مكة المكرمة، ففي أي اتجاه تكون قبلة سكان هذه المدينة؟",opts:["الشمال الشرقي","الشمال الغربي","الجنوب الشرقي","الجنوب الغربي"],ans:1},
+      {n:28,domain:'arithmetic',text:"يتضاعف أحد الكائنات الدقيقة كل نصف ساعة، فما عدد الكائنات المتكونة من كائن واحد خلال ثلاث ساعات؟",opts:["32","16","64","128"],ans:2},
+      {n:29,domain:'geometry',text:"في الشكل التالي، مربع. ما قياس الزاوية د ل جـ؟",opts:["75°","85°","95°","105°"],ans:0},
+      {n:30,domain:'algebra',text:"إذا كان \<span class='mx' dir='ltr'><span class='frac'><span class='num'>٢</span><span class='den'>٥+س</span></span> = <span class='frac'><span class='num'>١</span><span class='den'>٤</span></span></span>، فما قيمة س؟",opts:["صفر","1","2","3"],ans:3},
+      {n:31,domain:'data_analysis',text:"حصل صالح في ٣ اختبارات على: ٧٩، ٧٧، ٧٥ وحصل زميله أحمد على: ٧٣، ٨٣، ٧٥. قارن: متوسط درجات صالح مقابل متوسط درجات أحمد.",opts:["الأولى أكبر من الثانية","الثانية أكبر من الأولى","القيمتان متساويتان","المعطيات غير كافية"],ans:2},
+      {n:32,domain:'geometry',text:"دائرتان؛ نصف قطر الكبرى ٥سم، ونصف قطر الصغرى ٣سم. قارن: مساحة الدائرة الكبرى مقابل ٤ أمثال مساحة الدائرة الصغرى.",opts:["الأولى أكبر من الثانية","الثانية أكبر من الأولى","القيمتان متساويتان","المعطيات غير كافية"],ans:1},
+      {n:33,domain:'arithmetic',text:"قارن: \<span class='mx' dir='ltr'>٥&times;٥&times;٥&times;٠.٥&times;٠.٥</span> مقابل \<span class='mx' dir='ltr'>٧&times;٧&times;٧&times;٠.٧&times;٠.٧</span>",opts:["القيمة الأولى أكبر من الثانية","القيمة الثانية أكبر من الأولى","القيمتان متساويتان","المعطيات غير كافية"],ans:0},
+      {n:34,domain:'arithmetic',text:"قارن: \<span class='mx' dir='ltr'><span class='frac'><span class='num'>٦</span><span class='den'>٤</span></span> - <span class='frac'><span class='num'>٦</span><span class='den'>٥</span></span></span> مقابل \<span class='mx' dir='ltr'><span class='frac'><span class='num'>١</span><span class='den'>٤</span></span> + <span class='frac'><span class='num'>١</span><span class='den'>٥</span></span></span>",opts:["القيمة الأولى أكبر من الثانية","القيمة الثانية أكبر من الأولى","القيمتان متساويتان","المعطيات غير كافية"],ans:1},
+      {n:35,domain:'algebra',text:"لدى صالح مبلغ من المال يزيد عن ٣٠٠٠ ريال، ولدى أحمد مبلغ يزيد عن ٢٠٠٠ ريال. قارن: ما لدى صالح مقابل ما لدى أحمد.",opts:["القيمة الأولى أكبر من الثانية","القيمة الثانية أكبر من الأولى","القيمتان متساويتان","المعطيات غير كافية"],ans:3},
+      {n:36,domain:'verbal_analogy',text:"متسول : نقاش ::",opts:["محتال : مستقيم","تاجر : عامل","جندي : متريث","بخيل : شجاع"],ans:0},
+      {n:37,domain:'verbal_analogy',text:"حُبّ : عِشْق ::",opts:["تهور : سرعة","كلية : جامعة","صمت : كلام","مقبول : جيد"],ans:3},
+      {n:38,domain:'reading_comprehension',passageId:'pharmacy',text:"تشير الفقرة (١) إلى أن علم الصيدلة قديمًا:",opts:["عُرف بهذه التسمية عند علماء الطب","سماه بعلم الأدوية العلماء المسلمون","ازدهر في كنف الحضارة الإسلامية","استعان في البدء بعلم العقاقير"],ans:2},
+      {n:39,domain:'reading_comprehension',passageId:'pharmacy',text:"الضمير في كلمة 'عنه' في الفقرة (١) يعود على:",opts:["علم الصيدلة","الصيدلاني","التقدم","القائم بالصيدلة"],ans:0},
+      {n:40,domain:'reading_comprehension',passageId:'pharmacy',text:"يُستفاد من الفقرة (٢):",opts:["استقلال علم الصيدلة عن علم الكيمياء","ضرورة مراعاة المقادير في صناعة الدواء","اتحاد مصادر إعداد الأدوية وتراكيبها","الاستغناء عن الدواء باستعمال مكوناته"],ans:1},
+      {n:41,domain:'reading_comprehension',passageId:'pharmacy',text:"وفقًا للفقرة (٢)، أي الآتي صحيح؟",opts:["علم الصيدلة علم تطبيقي","علم النبات علم حياتي","علم الصيدلة نظري وعلم النبات تطبيقي","علم النبات وعلم الصيدلة علمان نظريان"],ans:0},
+      {n:42,domain:'reading_comprehension',passageId:'pharmacy',text:"تشير الفقرة (٣) إلى أن الأطباء:",opts:["استقلال علم الصيدلة عن علم الكيمياء","ضرورة مراعاة المقادير في صناعة الدواء","اتحاد مصادر إعداد الأدوية وتراكيبها","الاستغناء عن الدواء باستعمال مكوناته"],ans:3},
+      {n:43,domain:'reading_comprehension',passageId:'pharmacy',text:"فيما يتعلق بالطب والصيدلة، نفهم من الفقرة (٤):",opts:["أن الصيدلة أسهل من الطب","أن الطب متقدم على الصيدلة","أن الفصل بينهما أمر ضروري","أنهما متقاربان نفس السرعة"],ans:2},
+      {n:44,domain:'reading_comprehension',passageId:'pharmacy',text:"تشير الفقرة (٤) إلى أن القرون الوسطى:",opts:["استقل فيها علم الأدوية عن علم الصيدلة","جمع فيها بين مهنة الطب وعلم الأدوية","أسهمت في صعوبة دراسة الطب والصيدلة","هي أشهر القرون في علم الطب والصيدلة"],ans:1},
+      {n:45,domain:'reading_comprehension',passageId:'pharmacy',text:"تشير الفقرة (٥) إلى أن تعدد أصناف الأدوية:",opts:["يسّر الحصول على مكوناتها الأولية","سهّل تحضيرها وتقديمها عند الحاجة","أدى إلى تناقض علم الطب وعلم الصيدلة","أسهم في انفصال مهمة الطبيب عن الصيدلاني"],ans:3},
+      {n:46,domain:'reading_comprehension',passageId:'pharmacy',text:"تظهر الفقرة (٦) أن الأدوية والعقاقير الطبية:",opts:["يتفوق الحيواني منها على غيره","أصّل قوانينها علماء العرب المسلمون","اشتهرت ثلاثة أسماء منها عبر التاريخ","يتشابه المفرد منها مع غيره من العقاقير"],ans:1},
+      {n:47,domain:'reading_comprehension',passageId:'pharmacy',text:"يفهم من الفقرة (٦) أن العلماء المسلمين العرب ميزوا بين الأدوية؛ وفقًا لكونها:",opts:["مفردة وغير مفردة","حيوانية ونباتية","عشبية ومعدنية","أصلية وغير أصلية"],ans:0},
+      {n:48,domain:'reading_comprehension',passageId:'pharmacy',text:"تظهر الفقرة (٧) أن علماء العرب المسلمين:",opts:["وحدوا مقار الصيدليات ومدارس الصيدلة","شاركوا التجار في افتتاح الصيدليات العامة","أنشؤوا مدارس متخصصة في علم الصيدلة","كانت لهم ثقة في تجار العقاقير والتوابل"],ans:2},
+    ]},
+    {name:'القسم الثالث', time:25*60, qs:[
+      {n:49,domain:'geometry',text:"في الشكل، مستطيل يبلغ طوله مثلي عرضه (عرض المستطيل = ٤ سم)؛ فإذا قسّمناه إلى مثلثات متماثلة، فكم سنتمترًا مربعًا تبلغ مساحة خمسٍ منها؟",opts:["10","15","20","25"],ans:0},
+      {n:50,domain:'arithmetic',text:"في أحد مصانع الألبان، يُستخرَج من كل ٥٠ لترًا من الحليب ٣ كجم من الزبدة، فكم لترًا نحتاج للحصول على ٢١ كجم من الزبدة؟",opts:["320","350","420","450"],ans:1},
+      {n:51,domain:'algebra',text:"إذا كانت \<span class='mx' dir='ltr'><span class='frac'><span class='num'>ل+٢</span><span class='den'>ل-٤</span></span> = ٠</span>، فما قيمة ل؟",opts:["-5","-4","-3","-2"],ans:2},
+      {n:52,domain:'data_analysis',text:"إذا كانت ٦٠ درجة تمثل ٨٠% من الدرجة النهائية لنتيجة اختبار الأحياء، فما مقدار الدرجة النهائية؟",opts:["77","75","72","70"],ans:1},
+      {n:53,domain:'geometry',text:"في الشكل التالي (مثلث بأضلاع ١سم، ١سم، ١سم، وضلع مائل ٣سم)، ما قيمة س؟",opts:["45","60","75","105"],ans:2},
+      {n:54,domain:'algebra',text:"إذا كان عمر محمد يبلغ نصف عمر سعد، وعمر سعد ثلاثة أمثال عمر فهد، فما نسبة عمر فهد إلى عمر محمد؟",opts:["3/2","2","2/3","1/2"],ans:2},
+      {n:55,domain:'algebra',text:"إذا كان \<span class='mx' dir='ltr'><span class='frac'><span class='num'>١</span><span class='den'>١+٣ل</span></span> = <span class='frac'><span class='num'>١</span><span class='den'>٣+ل</span></span></span>، فإن ل تساوي:",opts:["-1","صفرًا","1","2"],ans:2},
+      {n:56,domain:'arithmetic',text:"ما العدد الذي إذا طرحنا منه ٧ وضربنا الناتج بثلاثة كان الناتج ٣٢؟ (بالتقريب)",opts:["8","9","13","14"],ans:2},
+      {n:57,domain:'arithmetic',text:"شركة استثمارية تعطي أرباحًا بواقع ١٥% من قيمة السهم، فإذا بلغ ربح السهم ١٨ ريالاً، فكم ريالاً قيمة السهم؟",opts:["120","100","180","150"],ans:1},
+      {n:58,domain:'algebra',text:"إذا كانت \<span class='mx' dir='ltr'>٩<sup>ل/٣</sup> = ٢٧</span>، فما قيمة ل؟",opts:["1","2","3","4"],ans:2},
+      {n:59,domain:'geometry',text:"إذا تحرك عقربا الساعة من الرابعة مساءً إلى السابعة والنصف مساءً، فما مجموع الدرجات التي قطعها عقرب الدقائق أثناء ذلك؟",opts:["1260°","1200°","1120°","1080°"],ans:0},
+      {n:60,domain:'contextual_error',text:"يجب أن تكون عندنا __مقبرة__ جاهزة لنزرع فيها أخطاء الأصدقاء.",opts:["لنزرع","مقبرة","الأصدقاء","أخطاء"],ans:1},
+      {n:61,domain:'contextual_error',text:"استثمر ما لديك من مواهب فلو لم __يغرد__ في الغابة من الطيور إلا أحسنها صوتًا للأصمّ الضجيج.",opts:["الطيور","يغرد","الضجيج","صوتًا"],ans:3},
+      {n:62,domain:'contextual_error',text:"ينام __المجتهد__ على وسادة من القطن فيستريح، أما الكسول، فلن يجد الراحة ولو على وسادة من الريش.",opts:["المجتهد","القطن","الكسول","الريش"],ans:1},
+      {n:63,domain:'contextual_error',text:"كوخ __تضحك__ في ضيقته خير من قصر تفرح في أرجائه.",opts:["تضحك","ضيقته","خير","تفرح"],ans:3},
+      {n:64,domain:'sentence_completion',text:"دعاء الوالدين لأعظم......... السعادة، فاغتنمه ليكون لك......... من كل مكروه.",opts:["أبواب – عملاً","أسباب – ثروة","موجبات – استباقاً","دواعي – حصنًا"],ans:3},
+      {n:65,domain:'sentence_completion',text:"الرجل العاقل ينشد......... الحسنة لعمله؛ فلا تُقدِمُ على عمل سيّئ فتكون عواقبه.........",opts:["العاقبة – وخيمة","المزايا – خيالية","الصفة – متناوبة","العافية – متتابعة"],ans:0},
+      {n:66,domain:'sentence_completion',text:"أفاد تقدم العلوم العصبية النفسية الموقنين على التغلب على مشكلاتهم، وسمح باستخدام طرق جديدة للتعلّم قادرة على......... سلوكهم وتوجيه تصرفاتهم، .........",opts:["تنوع – وتقبلهم","ضبط – وتسارعهم","تعديل – وتأهيلهم","مجاراة – واحتضانهم"],ans:2},
+      {n:67,domain:'sentence_completion',text:"صفة الحلم من أشهر الصفات التي اتسم بها العرب، وتفاخروا بها، لأنها.........صفة المرء في قومه وتكسبه.........عليهم.",opts:["تُسعد – العزة","تُعْلي – السعادة","تَرْفَع – السيادة","تميّز – الثراء"],ans:3},
+      {n:68,domain:'sentence_completion',text:"الغرب ينشر ثقافة.........جعلت كلّ شيء أمام الطفل......... مما جعل الأطفال يفقدون براءة الطفولة في وقت مبكر.",opts:["إباحية – مكشوفًا","جديدة – معقدًا","عصرية – غامضًا","إلكترونية – ساذجًا"],ans:0},
+      {n:69,domain:'verbal_analogy',text:"صلاة : ركوع ::",opts:["صوم : إفطار","عمرة : رمضان","زكاة : ذهب","حج : طواف"],ans:3},
+      {n:70,domain:'verbal_analogy',text:"عزّة : ذلّة ::",opts:["مُقْدِم : محجم","ليل : سُبات","قراءة : كتابة","قلب : رِثّة"],ans:0},
+      {n:71,domain:'verbal_analogy',text:"ناسخ : مخطوطة ::",opts:["حارس : بيئة","خياط : ثوب","سبّاك : ماسورة","نحات : إزميل"],ans:1},
+      {n:72,domain:'verbal_analogy',text:"مِبْضَع : جرّاح ::",opts:["منجل : مزارع","سرير : مريض","مدفع : حرب","مقص : قماش"],ans:0},
+    ]},
+    {name:'القسم الرابع', time:25*60, qs:[
+      {n:73,domain:'arithmetic',text:"إذا كان عددٌ ما يقبل القسمة على ٦ و ٨، فإنه يجب أن يقبل القسمة على:",opts:["12","18","32","36"],ans:0},
+      {n:74,domain:'geometry',text:"يريد شخص أن يغطي جدارًا بورق زينة، فإذا كان ارتفاع الجدار ٨م وطوله ثلاثة أمثال ارتفاعه، وكانت أبعاد لفّة الورق ٢م×٨م، فكم لفّة ورق يحتاج لتغطية الجدار؟",opts:["24","32","18","12"],ans:3},
+      {n:75,domain:'arithmetic',text:"ما الحد الخامس في متتابعة الأعداد الآتية: ٧، ١٨، ٢٩، ٤٠، ...؟",opts:["59","51","61","69"],ans:1},
+      {n:76,domain:'arithmetic',text:"اشترى يوسف ثلاث وحدات تخزين للحاسب الآلي، الأولى بالسعر الأصلي، والثانية بخصم ٢٥% منه، والثالثة بخصم ٥٠% منه؛ فإذا بلغ إجمالي القيمة التي دفعها يوسف ٨١٠ ريالات، فما سعر الوحدة الأصلي؟",opts:["240","270","320","360"],ans:3},
+      {n:77,domain:'geometry',text:"في الشكل التالي (مثلث فيه زاوية خارجية ١٢٠°)، ما قيمة س؟",opts:["50","60","70","80"],ans:2},
+      {n:78,domain:'geometry',text:"إذا كان طول أحد ضلعي مثلث ٥سم، وطول الضلع الثاني ٩سم، فأي الآتي لا يمكن أن يكون طولاً للضلع الثالث؟",opts:["4","7","12","13"],ans:0},
+      {n:79,domain:'geometry',text:"إذا أنقصنا بُعدَيْ مستطيل بنسبة ١٠%، فما نسبة النقص في مساحته؟",opts:["23%","25%","21%","19%"],ans:3},
+      {n:80,domain:'algebra',text:"إذا كانت \<span class='mx' dir='ltr'>٣<sup>-٣&times;٣</sup> = ٨١<sup>م</sup></span> و \<span class='mx' dir='ltr'>٨&times;٣<sup>م</sup> = ٩٦</span>، قارن: قيمة م مقابل هـ.",opts:["القيمة الأولى أكبر من الثانية","القيمة الثانية أكبر من الأولى","القيمتان متساويتان","المعطيات غير كافية"],ans:1},
+      {n:81,domain:'algebra',text:"إذا كانت س > ٠ و ص < ٠، قارن: س - ٢ص مقابل ٢س + ص",opts:["القيمة الأولى أكبر من الثانية","القيمة الثانية أكبر من الأولى","القيمتان متساويتان","المعطيات غير كافية"],ans:3},
+      {n:82,domain:'algebra',text:"قارن: \<span class='mx' dir='ltr'><span class='frac'><span class='num'>٢</span><span class='den'>٢+٧<span class='root'><span class='radsym'>&#8730;</span><span class='radicand'>٥</span></span></span></span></span> مقابل \<span class='mx' dir='ltr'><span class='frac'><span class='num'>١</span><span class='den'>٢</span></span></span>",opts:["القيمة الأولى أكبر من الثانية","القيمة الثانية أكبر من الأولى","القيمتان متساويتان","المعطيات غير كافية"],ans:1},
+      {n:83,domain:'arithmetic',text:"خزّان ماء، استهلك منه في اليوم الأول ١/٣ ما فيه، واستهلك في اليوم الثاني ربع المتبقي، وفي اليوم الثالث استهلك المتبقي بالكامل. قارن: مجموع استهلاك اليومين الأولين مقابل استهلاك اليوم الثالث.",opts:["القيمة الأولى أكبر من الثانية","القيمة الثانية أكبر من الأولى","القيمتان متساويتان","المعطيات غير كافية"],ans:2},
+      {n:84,domain:'verbal_analogy',text:"مفاوضة : نقاش ::",opts:["اجتماع : اختيار","مقاطعة : استنكار","فهم : إنصات","تسوية : استواء"],ans:2},
+      {n:85,domain:'reading_comprehension',passageId:'globalization',text:"الفقرة (١) تدل على أن التحديات تواجه:",opts:["لغات شعوب العالم الثالث","اللغة العربية والثقافة الإسلامية","كلّ لغة ذات صلة باللغات الأخرى","أيّ لغة تحمل تعاليم وشرائع سماوية"],ans:2},
+      {n:86,domain:'reading_comprehension',passageId:'globalization',text:"نستنتج من الفقرة (١) أن السعي إلى إذابة اللغة يعتبر تعديًا على:",opts:["سهولة الاتصال بالآخرين","أساس من أسس الثقافة","تمازج اللغات وتلاقح الثقافات","رمز التقارب بين الشعوب الشرقية"],ans:1},
+      {n:87,domain:'reading_comprehension',passageId:'globalization',text:"كانت أوضاع اللغة العربية في جزيرة العرب قبل الإسلام أفضل من وضعها في العصور المتأخرة، كما تشير الفقرة (٢)، وذلك لأن العرب:",opts:["كانوا متقوقعين على أنفسهم","كانوا يستوطنون وسط جزيرة العرب","كانت لهم هيمنة لغوية على جيرانهم","كانوا شبه منعزلين عن الأقوام المجاورين"],ans:3},
+      {n:88,domain:'reading_comprehension',passageId:'globalization',text:"استجدّت تحديات على اللغة العربية في العصر الحاضر، أفرزتها العولمة، وتتمثل تلك التحديات كما يظهر من الفقرة (٣) في:",opts:["أهمية اللغة والشغف بما هو أجنبي","استقطاب بعض الألفاظ غير العربية","التأثيرات الإعلامية، والمنافع المادية","نشر العلوم باللغة الإنجليزية"],ans:2},
+      {n:89,domain:'reading_comprehension',passageId:'globalization',text:"بناءً على ما ورد في الفقرة (٣)، سبب استخدام اللفظ غير العربي يعود إلى:",opts:["سعة انتشار اللفظ الأجنبي","الإعجاب بالألفاظ الأجنبية","ضرورة الاتصال بالأجنبي","سهولة اللفظ الأجنبي"],ans:1},
+      {n:90,domain:'reading_comprehension',passageId:'globalization',text:"فيما يتعلق بالحفاظ على اللغة العربية، نستطيع أن نستخلص من الفقرة (٤):",opts:["وجود موقف إيجابي عام","عدم وجود أي موقف سلبي منها","تشجيع الدول العربية على تكوين مجامع لغوية","قيام جهود جيدة في بعض الدول العربية"],ans:3},
+      {n:91,domain:'reading_comprehension',passageId:'globalization',text:"قام مجمع اللغة العربية في دمشق بدراسة الألفاظ الأجنبية الشائعة، كما تشير الفقرة (٤)، وكان الهدف من ذلك:",opts:["وضع ألفاظ عربية مكانها","حصر تلك الألفاظ ونشرها","انتقاء الألفاظ الرسمية","مقارنة الألفاظ الأجنبية بالمستخدمة"],ans:0},
+      {n:92,domain:'reading_comprehension',passageId:'globalization',text:"إذا أردنا استمرارية اللغة العربية، كما تشير الفقرة (٤)، فما علينا سوى:",opts:["الاستعمال الرسمي للألفاظ الجديدة","إتقان لغة أجنبية مع المحافظة على العربية","توظيفها بصورة جيدة في مختلف المجالات","إقناع الإعلام بحب اللغة للتأثير على الناس"],ans:2},
+      {n:93,domain:'reading_comprehension',passageId:'globalization',text:"الضمير في 'بها' في الفقرة (٤) يعود على الألفاظ:",opts:["الترجمة","الأجنبية","العربية","المعربة"],ans:1},
+      {n:94,domain:'reading_comprehension',passageId:'globalization',text:"لفظة 'السيرورة' كما وردت في سياق الفقرة (٤) تعني:",opts:["الحركة","الصيرورة","التطوّر","الانتشار"],ans:3},
+      {n:95,domain:'reading_comprehension',passageId:'globalization',text:"وفقًا للفقرة (٥)، عدد الخدمات التي يمكن أن تقدمها وسائل الاتصال الحديثة للغة العربية، يبلغ:",opts:["٤","٣","٦","٥"],ans:1},
+      {n:96,domain:'reading_comprehension',passageId:'globalization',text:"العنوان الأنسب لعموم النص هو:",opts:["اللغة العربية في العصر الحديث","العولمة وتواصل اللغات الحديثة","اللغة العربية بين الماضي والحاضر","مرونة اللغة العربية"],ans:0},
+    ]},
+  ],
+  passages:{
+    pharmacy: `(1) عُرف علم الصيدلة عند العلماء في القرون الوسطى بأسماء كثيرة، منها علم الأدوية، وعلم المفردات، وعلم العقاقير، وعلم الأقرابازينيّات. لكن العلماء المسلمين العرب هم الذين أطلقوا على هذا العلم اسم علم الصيدلة، والقائم به يعرف بالصيدلاني أو الصيدلي. ولدينا كتب متعددة عنه نستطيع أن نقول: إن علم الصيدلة تقدّم على أيدي العرب تقدماً كبيراً.\n\n(2) والصيدلة متصلة بعلم الأعشاب (النبات) وبعلوم الحيوان والمعادن والكيمياء؛ لأن الأدوية نباتية وحيوانية ومعدنية تحتاج إلى معالجة وإلى نسب في التركيب تقتضي المعرفة بالكيمياء. والفرق بين علم الصيدلة وعلم النبات أن الصيدلة يبحث في التأثير الطبي للنبات، أما علم النبات فعلم يبحث في خواص النبات.\n\n(3) وكان الطبيب يعمل في الصيدلة، وله بالطبع أعوان يجمعون له النبات الشافي والأعشاب الطبيعية، إلا أن هناك شيئًا ثابتًا لا بد من ذكره وهو أن الأدوية قديمًا كانت تنتقل مباشرة من يد الطبيب إلى يد العليل دون أي وسيط، فكان الطبيب يفحص المريض ويصف له العلاج الناجع، ويحضّره ثم يقدّمه إليه بنفسه ليتناوله.\n\n(4) ومن الصعب جداً فصل علم الصيدلة عن علم الطب، لذلك كان الطبيب في القرون الوسطى يعمل طبيباً ويعمل نفس الوقت صيدلانيًا، وبقي الأمر مستمرًا حتى قرر أطباء العالم العربي والإسلامي أن يميزوا بين الأمور أكثر تعقيدًا؛ حيث إن الأمور صارت أكثر تعقيدًا ويلزم أن يعمل في حقل الصيدلة ويترك التطبيق الطبي للأطباء.\n\n(5) إن العقاقير قد كثرت وتشعبت طرق تركيبها وطالت، فاستوجبت من يخصص لها وقته ويكرس لها جهده، ويفتش عن الأعشاب الطبيعية في كل مكان، وهنا انقسمت مسؤولية الطبيب الصيدلي والصيدلي الطبيب إلى قسمين، وتفرّعت منها مهنتان قائمتان بذاتيهما.\n\n(6) لقد اهتم العلماء المسلمون بتحضير الأدوية المفردة والمركبة، سواء أكانت من نبات أم من حيوان أم من معادن، وقد عرّفوا الأدوية المفردة بالعقاقير الأصليّة، أما الأدوية المركّبة فسموها الأقرابازين الأقاربينين، وبقي هذان الاسمان متداولين عبر التاريخ. وقدّموا تقدمًا ملحوظًا في معرفة خواص العقاقير ومصادرها؛ فهم العرب الذين أسّسوا لهذه الصيدلة الحقيقيين وهم الذين رفعوها عن مستوى تجارة العقاقير، وأنشؤوا المدارس لتحضيرها وتصريفها، وأخّضعوا هذه الصناعة لرقابة الدولة لمنع الغش، فكان الصيادلة لا يزاولون مهنتهم إلا بعد الترخيص لهم.\n\n(7) إضافة إلى ما سبق، فالعرب هم المؤسسون الحقيقيون لمهنة الصيدلة وهم الذين رفعوها عن مستوى تجارة العقاقير، وأنشؤوا المدارس لتحضير الأدوية وتصريفها، وأخضعوا هذه الصناعة لرقابة الدولة لمنع الغش، فكان الصيادلة لا يزاولون مهنتهم إلا بعد الترخيص لهم. وقد افتتحوا الصيدليات العامة في أواخر القرن الثامن للميلاد في عهد المنصور. كما ألحقوا بكل بيمارستان صيدلية خاصة به. ومنذ أيام المأمون في القرن التاسع كانت الصيدليات تحت إشراف الدولة صيانة لها من تجار العقاقير.`,
+    globalization: `(1) الاحتكاك الحضاري يستتبع احتكاكاً لغوياً في الغالب بين اللغة الأصلية واللغة الوافدة. فهل تواجه اللغة العربية تحدياً في عصر العولمة؟\n\n(2) عندما كان العرب يعيشون منعزلين نسبياً في جزيرتهم العربية، لم تكن لغتهم تتعرض للاحتكاك بالدرجة التي تؤثر فيها تأثيراً عميقاً؛ لذلك اقتصرت التأثيرات الأجنبية فيها على بعض الألفاظ التي أفادها التجار وبعض الشعراء من البلدان المجاورة، والمتعلقة غالباً بأسماء الأدوات أو النباتات التي لم يكن للعرب عهد بها في جزيرتهم. وبعد أن انتشر العرب في الأمصار الإسلامية أخذت التحديات تواجه اللغة العربية بفعل الاحتكاك باللغات الأخرى، وعلى الرغم من أن الغلبة كانت للغة العربية، وتحول أبناء الأمصار إلى الثقافة الإسلامية واللغة العربية، كما حدث في مصر وفارس، فقد تأثرت باللغات الأخرى بدرجة محدودة، وكان العلماء آنذاك يبادرون إلى جمع تلك الألفاظ ويضعون لها القواعد.\n\n(3) أما في العصر الحاضر فتواجه اللغة العربية، كغيرها من اللغات الشرقية، تحديات من قبل قوى العولمة المتمثلة في المصالح المادية الناجمة عن الاتصال بالأجنبي، والتأثير الإعلامي القائم على تفضيل اللغة الإنجليزية على أنها اللغة العالمية التي هي لغة النشر. إن التحدي الذي يواجه اللغة العربية في هذا العصر مرده الشعور بأهمية اللغة الأجنبية غالباً عند من هو مولع بكل ما هو أجنبي. والغريب أن الولع باللفظ الأجنبي يؤدي بكثير من الناس إلى ترك اللفظ العربي الميسر إلى الغريب مثل كلمة 'جوال'، التي استقرت لدى كثير من العرب، ومع ذلك فإن بعض الناس ما زالوا يستعملون كلمة 'موبايل'.\n\n(4) وقد بادر بعض أبناء العربية بتشجيع الاستعمال الرسمي للفظ العربي وإكسابه السيرورة، كما هي تجربة المجمع اللغوي في دمشق الذي قام بدراسة الألفاظ الأجنبية الشائعة بهدف وضع ألفاظ عربية مكانها. ويمكن القول إن الحفاظ على اللغة العربية يستلزم إتقان لغة أجنبية مع المحافظة على العربية، وتوظيفها بصورة جيدة في مختلف المجالات.\n\n(5) إن أجواء العولمة المتفتحة والمتطورة يمكن أن تعين على إيجاد وسائل تستخدم في صالح اللغة العربية كي تأخذ مكانتها في حياة الإنسان العربي. فتقدُّم وسائل الاتصال يخدمها من حيث نشرها، وسهولة التواصل بين الباحثين في قضاياها، وإنتاج البرامج التعليمية والتثقيفية الجذابة الميسرة، وبعث كنوزها المخبوءة، ويؤكد ذلك أن هناك دراسة أجريت في اليابان، مفادها أن اللغة العربية تصدرت لغات العالم من حيث وضوح الصوت في استخدام الحاسب الآلي.`,
+  },
+  charts:{
+    land: {type:'table', title:'قُسمت أرض مساحتها 900م² إلى أجزاء متساوية', rows:[
+      {label:'فيلا', val:'14'},{label:'ملحق ضيوف', val:'2/3'},{label:'مسجد', val:'2'},{label:'حديقة', val:'1/5'},{label:'مرآب', val:'1/3'}
+    ]}
+  }
+};
+
+// ============================================================
+// APP STATE
+// ============================================================
+let state = { screen:'home', test:null, sIdx:0, qIdx:0, answers:{}, flags:{}, timings:{}, qStart:0, ticker:null, deadline:0, remaining:0, animate:false, notice:'', result:null };
+const KEY = 'gatDualHistoryV2';
+const ICON_FLAG = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 14V2.5M3 3h8.5l-1.6 2.7 1.6 2.8H3"/></svg>';
+const app = document.getElementById('app'), headerTitle = document.getElementById('headerTitle'), timerDisp = document.getElementById('timerDisp'), timeBar = document.getElementById('timeBar'), exitBtn = document.getElementById('exitBtn');
+
+function loadHistory(){ try{return JSON.parse(localStorage.getItem(KEY)||'[]');}catch(e){return [];} }
+function saveHistory(r){ const h=loadHistory(); h.push(r); try{localStorage.setItem(KEY,JSON.stringify(h));}catch(e){} }
+function escapeHtml(s){ const d=document.createElement('div'); d.innerText=s; return d.innerHTML; }
+function typeset(){ if(window.MathJax && MathJax.typesetPromise){ MathJax.typesetPromise(); } }
+function isRTLTest(){ return !!state.test && state.test.lang==='ar'; }
+function fmt(s,rtl){ let o=mdUnderline(s); return rtl?wrapNumbersLTR(o):o; }
+function letter(i,rtl){ return rtl?['أ','ب','ج','د','هـ'][i]:String.fromCharCode(65+i); }
+function currentQ(){ return state.test.sections[state.sIdx].qs[state.qIdx]; }
+function qKey(s,q){ return state.test.id+'_'+(s!==undefined?s:state.sIdx)+'_'+(q!==undefined?q:state.qIdx); }
+function ns(n){ return `<span class="ltr-num">${n}</span>`; }
+
+function render(){
+  const rtl = ['intro','test','sectionReview'].includes(state.screen) && isRTLTest();
+  document.body.dir = rtl?'rtl':'ltr';
+  document.documentElement.lang = rtl?'ar':'en';
+  const inTest = ['intro','test','sectionReview'].includes(state.screen);
+  exitBtn.style.display = inTest?'':'none';
+  headerTitle.textContent = inTest ? state.test.sections[state.sIdx].name : '';
+  if(state.screen!=='test' && state.screen!=='sectionReview'){ timerDisp.textContent=''; timeBar.style.width='0%'; }
+  ({home:renderHome,loading:renderLoading,intro:renderIntro,test:renderTest,sectionReview:renderSectionReview,results:renderResults})[state.screen]();
+  if(state.screen==='test'||state.screen==='sectionReview') updateClock();
+  if(state.animate){ state.animate=false; animateIn(); }
+  typeset();
+}
+function animateIn(){
+  if(!window.anime || matchMedia('(prefers-reduced-motion:reduce)').matches) return;
+  anime({targets:'#app > *', opacity:[0,1], translateY:[6,0], duration:280, easing:'easeOutQuad', delay:anime.stagger(40)});
+  document.querySelectorAll('.bfill').forEach(el=>anime({targets:el, width:['0%',el.dataset.w+'%'], duration:700, easing:'easeOutCubic', delay:180}));
+}
+function renderLoading(){
+  app.innerHTML = `<div aria-busy="true"><div class="sk" style="width:36%;height:24px"></div><div class="sk" style="width:100%;height:14px;margin-top:24px"></div><div class="sk" style="width:84%;height:14px;margin-top:10px"></div><div class="sk" style="width:100%;height:46px;margin-top:26px"></div><div class="sk" style="width:100%;height:46px;margin-top:8px"></div><div class="sk" style="width:100%;height:46px;margin-top:8px"></div></div>`;
+}
+function withSkeleton(fn,ms){ state.screen='loading'; render(); setTimeout(fn,ms||380); }
+
+// ---------- Home ----------
+function bar(label,pct,val,cls){ return `<div class="brow"><span>${label}</span><div class="btrack"><i class="bfill ${cls||''}" data-w="${pct}" style="width:${pct}%"></i></div><span class="bv">${val}</span></div>`; }
+function renderHome(){
+  const hist=loadHistory(), last=id=>hist.filter(h=>h.testId===id).slice(-1)[0], e=last('E'), a=last('A');
+  let cmp='';
+  if(e&&a){
+    const pe=100*e.correct/e.total, pa=100*a.correct/a.total, diff=Math.abs(pe-pa), mx=Math.max(e.avgSec,a.avgSec)||1;
+    const verdict = diff<3 ? 'Within 3 points. Compare speed and flag counts before deciding.' : (pe>pa?'English leads by ':'Arabic leads by ')+diff.toFixed(1)+' points.';
+    const keys=Object.keys(DOMAIN_INFO).filter(k=>e.domainStats[k]&&a.domainStats[k]);
+    cmp = `<div class="panel"><div class="label">English vs Arabic, latest run of each</div>
+      ${bar('English accuracy',pe,pe.toFixed(0)+'%')}${bar('Arabic accuracy',pa,pa.toFixed(0)+'%','b')}
+      ${bar('English sec/question',100*e.avgSec/mx,e.avgSec.toFixed(1)+'s')}${bar('Arabic sec/question',100*a.avgSec/mx,a.avgSec.toFixed(1)+'s','b')}
+      <p style="margin:14px 0 4px"><b>${verdict}</b></p>
+      <p class="muted" style="margin:0 0 14px;font-size:13px">One run per language is a weak signal, and the two forms contain different questions. Repeat before you commit.</p>
+      <table><tr><th>Domain</th><th>English</th><th>Arabic</th></tr>${keys.map(k=>{const x=e.domainStats[k],y=a.domainStats[k];return `<tr><td>${DOMAIN_INFO[k].en.name}</td><td>${Math.round(100*x.correct/x.total)}% (${x.correct}/${x.total})</td><td>${Math.round(100*y.correct/y.total)}% (${y.correct}/${y.total})</td></tr>`}).join('')}</table></div>`;
+  }
+  app.innerHTML = `
+    <h1>GAT trial tests</h1>
+    <p class="muted" style="max-width:620px;margin:0 0 20px">Both official ETEC trial forms with real 25 minute sections, section directions, flagging, a review screen before each submit, and per question timing. Run each form once and the comparison appears below.</p>
+    <div class="panel"><div class="label">Choose a form</div><div class="rows">
+      <div class="row"><div><div class="rt">English form</div><div class="muted">96 questions, 4 sections, 100 minutes</div></div><button class="btn" onclick="startTest('E')">Start</button></div>
+      <div class="row"><div><div class="rt">Arabic scientific form</div><div class="muted">96 questions, 4 sections, 100 minutes</div></div><button class="btn" onclick="startTest('A')">Start</button></div>
+    </div></div>
+    ${cmp}
+    ${hist.length?`<div class="panel"><div class="label">Past runs</div><table><tr><th>Form</th><th>Score</th><th>Time</th><th>Avg/Q</th><th>Flags</th></tr>${hist.slice().reverse().map(h=>`<tr><td>${h.testId==='E'?'English':'Arabic'}</td><td>${h.correct}/${h.total}</td><td>${Math.floor(h.totalSec/60)}m ${Math.round(h.totalSec%60)}s</td><td>${h.avgSec.toFixed(1)}s</td><td>${h.flaggedCount}</td></tr>`).join('')}</table>
+    <div style="display:flex;gap:8px;margin-top:14px"><button class="btn line" onclick="clearHist()">Clear history</button><button class="btn" onclick="exportData()">Export data (JSON)</button></div></div>`:''}`;
+}
+function clearHist(){ if(confirm('Clear all saved runs?')){ localStorage.removeItem(KEY); state.animate=false; render(); } }
+function exportData(){
+  const blob=new Blob([JSON.stringify(loadHistory(),null,2)],{type:'application/json'}), url=URL.createObjectURL(blob), a=document.createElement('a');
+  a.href=url; a.download='gat_simulator_data.json'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),2000);
+}
+
+// ---------- Flow ----------
+function startTest(id){
+  state.test = id==='E'?TEST_E:TEST_A; state.sIdx=0; state.qIdx=0; state.answers={}; state.flags={}; state.timings={}; state.notice='';
+  withSkeleton(()=>{ state.screen='intro'; state.animate=true; render(); },320);
+}
+function renderIntro(){
+  const t=state.test, sec=t.sections[state.sIdx], rtl=isRTLTest(), counts={};
+  sec.qs.forEach(q=>counts[q.domain]=(counts[q.domain]||0)+1);
+  const dirs = rtl
+    ? ['هناك إجابة صحيحة واحدة عن كل سؤال.','بعد الانتقال إلى قسم لاحق لا يمكن العودة إلى قسم سابق.','يمكنك تعليم الأسئلة ومراجعة إجاباتك قبل تسليم القسم.','يبدأ عدّاد الوقت عند الضغط على زر البدء.']
+    : ['There is only ONE correct answer to each question.','Once you proceed to a later section, you cannot return to an earlier one.','You can flag questions and review your answers before submitting the section.','The section timer starts when you press Begin.'];
+  const rows = Object.keys(counts).map(k=>`<tr><td>${DOMAIN_INFO[k][t.lang].name}</td><td>${ns(counts[k])}</td></tr>`).join('');
+  app.innerHTML = `${state.notice?`<div class="note">${escapeHtml(state.notice)}</div>`:''}
+    <div class="panel"><div class="label">${rtl?'التعليمات':'Directions'}</div>
+      <h1>${escapeHtml(sec.name)}</h1>
+      <p class="muted" style="margin:0">${rtl?'الأسئلة':'Questions'} ${ns(sec.qs[0].n+' - '+sec.qs[sec.qs.length-1].n)} &nbsp;|&nbsp; ${rtl?'الزمن':'Time'} ${ns(sec.time/60)} ${rtl?'دقيقة':'min'}</p>
+      <ul class="dirs">${dirs.map(d=>`<li>${d}</li>`).join('')}</ul></div>
+    <div class="panel"><div class="label">${rtl?'أنواع الأسئلة في هذا القسم':'Question types in this section'}</div><table>${rows}</table></div>
+    <button class="btn" onclick="beginSection()">${rtl?'ابدأ القسم':'Begin section'}</button>`;
+}
+function beginSection(){
+  const sec=state.test.sections[state.sIdx];
+  state.deadline=Date.now()+sec.time*1000; state.remaining=sec.time; state.qIdx=0; state.qStart=Date.now(); state.notice='';
+  startTicker(); state.screen='test'; state.animate=true; render();
+}
+function startTicker(){
+  stopTicker();
+  state.ticker=setInterval(()=>{ state.remaining=Math.max(0,Math.ceil((state.deadline-Date.now())/1000)); updateClock(); if(state.remaining<=0) submitSection(true); },500);
+}
+function stopTicker(){ clearInterval(state.ticker); state.ticker=null; }
+function updateClock(){
+  const s=state.remaining, sec=state.test.sections[state.sIdx], low=s<60;
+  timerDisp.textContent=Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+  timeBar.style.width=(100*s/sec.time)+'%';
+  timerDisp.classList.toggle('low',low); timeBar.classList.toggle('low',low);
+}
+function recordTiming(){ const k=qKey(); state.timings[k]=(state.timings[k]||0)+(Date.now()-state.qStart)/1000; state.qStart=Date.now(); }
+function confirmExit(){ if(confirm('End this test and return home? Progress on this run will not be saved.')){ stopTicker(); state.screen='home'; state.animate=true; render(); } }
+
+// ---------- Question screen ----------
+function renderChart(id,rtl){
+  const c=state.test.charts&&state.test.charts[id]; if(!c) return '';
+  if(c.type==='pie'){
+    const tot=c.data.reduce((a,b)=>a+b.val,0), cols=['#1C2B4A','#B8823F','#5B6B8C','#8C7A5B','#9AA3B5']; let acc=0, p='';
+    c.data.forEach((d,i)=>{const s=acc/tot*2*Math.PI; acc+=d.val; const e=acc/tot*2*Math.PI; p+=`<path d="M50,50 L${50+40*Math.sin(s)},${50-40*Math.cos(s)} A40,40 0 ${e-s>Math.PI?1:0} 1 ${50+40*Math.sin(e)},${50-40*Math.cos(e)} Z" fill="${cols[i]}" stroke="var(--surface)" stroke-width="1"/>`;});
+    return `<div dir="ltr" style="margin-top:12px"><b style="font-size:13px">${escapeHtml(c.title)}</b><div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-top:8px"><svg width="120" height="120" viewBox="0 0 100 100">${p}</svg><div>${c.data.map((d,i)=>`<div style="display:flex;align-items:center;gap:8px;font-size:13px;margin:3px 0"><i style="width:10px;height:10px;background:${cols[i]};display:inline-block"></i>${escapeHtml(d.label)} ${d.val}%</div>`).join('')}</div></div></div>`;
+  }
+  return `<div style="margin-top:12px"><b style="font-size:13px">${escapeHtml(c.title)}</b><table style="margin-top:6px"><tr><th>المنشأة</th><th>عدد الأجزاء</th></tr>${c.rows.map(r=>`<tr><td>${escapeHtml(r.label)}</td><td>${ns(escapeHtml(r.val))}</td></tr>`).join('')}</table></div>`;
+}
+function renderTest(){
+  const t=state.test, sec=t.sections[state.sIdx], q=currentQ(), rtl=isRTLTest(), total=sec.qs.length, key=qKey(), info=DOMAIN_INFO[q.domain][t.lang], fl=!!state.flags[key];
+  const dom=`<div class="dom"><span class="tl">${rtl?'نوع السؤال':'Question type'}</span><b>${escapeHtml(info.name)}</b>${escapeHtml(info.desc)}</div>`;
+  const opts=q.opts.map((o,i)=>`<div class="opt ${state.answers[key]===i?'sel':''}" role="button" tabindex="0" onclick="selectOpt(${i})" onkeydown="if(event.key==='Enter'||event.key===' '){selectOpt(${i});event.preventDefault()}"><span class="key">${letter(i,rtl)}</span><span class="ot">${fmt(o,rtl)}</span></div>`).join('');
+  const qh=`<div class="qt">${fmt(q.text,rtl)}</div>${q.chartId?renderChart(q.chartId,rtl):''}<div class="opts">${opts}</div>`;
+  const body=q.passageId
+    ? `<div class="split"><div class="pane passage"><div class="label">${rtl?'النص':'Passage'}</div><div class="ptext">${fmt(t.passages[q.passageId],rtl)}</div></div><div class="pane">${dom}${qh}</div></div>`
+    : `<div class="panel">${dom}${qh}</div>`;
+  app.innerHTML=`<div class="qmeta"><span>${rtl?'السؤال':'Question'} ${ns(state.qIdx+1+' / '+total)}</span><span>${rtl?'القسم':'Section'} ${ns((state.sIdx+1)+' / '+t.sections.length)}</span></div>
+    <div class="qbar"><i style="width:${100*(state.qIdx+1)/total}%"></i></div>${body}
+    <div class="nav"><button class="btn line" onclick="prevQ()" ${state.qIdx===0?'disabled':''}>${rtl?'السابق':'Back'}</button>
+    <button class="flagbtn ${fl?'on':''}" id="flagBtn" onclick="toggleFlag()">${ICON_FLAG}<span>${fl?(rtl?'معلّم':'Flagged'):(rtl?'علّم للمراجعة':'Flag for review')}</span></button>
+    <button class="btn" onclick="nextQ()">${state.qIdx===total-1?(rtl?'مراجعة القسم':'Review section'):(rtl?'التالي':'Next')}</button></div>`;
+}
+function selectOpt(i){ recordTiming(); state.answers[qKey()]=i; document.querySelectorAll('.opt').forEach((el,x)=>el.classList.toggle('sel',x===i)); }
+function toggleFlag(){
+  const k=qKey(), rtl=isRTLTest(); state.flags[k]=!state.flags[k];
+  const b=document.getElementById('flagBtn'); b.classList.toggle('on',state.flags[k]);
+  b.querySelector('span').textContent=state.flags[k]?(rtl?'معلّم':'Flagged'):(rtl?'علّم للمراجعة':'Flag for review');
+}
+function goQ(n){ recordTiming(); state.qIdx=n; state.animate=true; render(); }
+function nextQ(){ const sec=state.test.sections[state.sIdx]; if(state.qIdx<sec.qs.length-1) goQ(state.qIdx+1); else { recordTiming(); state.screen='sectionReview'; state.animate=true; render(); } }
+function prevQ(){ if(state.qIdx>0) goQ(state.qIdx-1); }
+document.addEventListener('keydown',e=>{
+  if(state.screen!=='test'||e.ctrlKey||e.metaKey) return;
+  const n='1234'.indexOf(e.key); if(n>=0&&n<currentQ().opts.length) selectOpt(n);
+  else if(e.key==='f'||e.key==='F') toggleFlag();
+});
+
+// ---------- Section review ----------
+function renderSectionReview(){
+  const t=state.test, sec=t.sections[state.sIdx], rtl=isRTLTest(), last=state.sIdx===t.sections.length-1;
+  const un=sec.qs.filter((q,i)=>state.answers[qKey(state.sIdx,i)]===undefined).length, fl=sec.qs.filter((q,i)=>state.flags[qKey(state.sIdx,i)]).length;
+  const cells=sec.qs.map((q,i)=>{const k=qKey(state.sIdx,i);return `<div class="rcell ${state.answers[k]!==undefined?'ans':'un'} ${state.flags[k]?'fl':''}" role="button" tabindex="0" onclick="jumpTo(${i})" onkeydown="if(event.key==='Enter')jumpTo(${i})">${q.n}</div>`;}).join('');
+  app.innerHTML=`<div class="panel"><div class="label">${rtl?'مراجعة القسم':'Section review'}</div><h1>${rtl?'راجع إجاباتك':'Review your answers'}</h1>
+    <p class="muted" style="margin:0">${ns(un)} ${rtl?'دون إجابة':'unanswered'} &nbsp;|&nbsp; ${ns(fl)} ${rtl?'معلّم':'flagged'}. ${rtl?'الوقت ما زال يعمل. اضغط على رقم للعودة إليه.':'The timer is still running. Select a number to go back to it.'}</p>
+    <div class="rgrid">${cells}</div>
+    <p class="muted" style="font-size:12px;margin:0 0 16px">${rtl?'ممتلئ: مُجاب. متقطع: دون إجابة. إطار برتقالي: معلّم.':'Filled: answered. Dashed: unanswered. Outlined in bronze: flagged.'}</p>
+    <div class="nav"><button class="btn line" onclick="jumpTo(${sec.qs.length-1})">${rtl?'العودة للاختبار':'Back to test'}</button>
+    <button class="btn" onclick="submitSection(false)">${last?(rtl?'تسليم القسم الأخير':'Submit final section'):(rtl?'تسليم والمتابعة':'Submit and continue')}</button></div></div>`;
+}
+function jumpTo(i){ state.qIdx=i; state.qStart=Date.now(); state.screen='test'; state.animate=true; render(); }
+function submitSection(auto){
+  if(state.screen==='test') recordTiming();
+  stopTicker();
+  const rtl=isRTLTest();
+  state.notice = auto ? (rtl?'انتهى وقت القسم السابق وتم تسليمه تلقائيًا.':'The previous section was submitted automatically when time ran out.') : '';
+  if(state.sIdx<state.test.sections.length-1){ state.sIdx++; state.qIdx=0; state.screen='intro'; state.animate=true; render(); }
+  else finishTest();
+}
+
+// ---------- Results ----------
+function finishTest(){
+  const t=state.test; let correct=0,total=0,totalSec=0,flaggedCount=0,unanswered=0; const secStats=[],domainStats={},rows=[];
+  t.sections.forEach((sec,si)=>{ let sc=0;
+    sec.qs.forEach((q,qi)=>{ const k=qKey(si,qi), g=state.answers[k], d=state.timings[k]||0, f=!!state.flags[k], ok=g===q.ans;
+      total++; totalSec+=d; if(f) flaggedCount++; if(g===undefined) unanswered++; if(ok){correct++;sc++;}
+      const ds=domainStats[q.domain]||(domainStats[q.domain]={correct:0,total:0,sec:0}); ds.total++; ds.sec+=d; if(ok) ds.correct++;
+      rows.push({n:q.n,section:sec.name,domain:q.domain,given:g===undefined?null:g,correctIdx:q.ans,ok,sec:+d.toFixed(1),flagged:f,question:q.text.slice(0,140),chosen:g===undefined?null:q.opts[g],correctText:q.opts[q.ans]});
+    });
+    secStats.push({name:sec.name,total:sec.qs.length,correct:sc});
+  });
+  const rec={testId:t.id,label:t.label,when:Date.now(),correct,total,unanswered,totalSec,avgSec:totalSec/total,flaggedCount,sections:secStats,domainStats,rows};
+  saveHistory(rec); state.result=rec;
+  withSkeleton(()=>{ state.screen='results'; state.animate=true; render(); },420);
+}
+function renderResults(){
+  const r=state.result, t=state.test, rtl=t.lang==='ar', pct=Math.round(100*r.correct/r.total);
+  const secBars=r.sections.map(s=>bar(escapeHtml(s.name),100*s.correct/s.total,`${s.correct}/${s.total}`)).join('');
+  const domBars=Object.keys(r.domainStats).map(k=>{const d=r.domainStats[k];return bar(DOMAIN_INFO[k].en.name,100*d.correct/d.total,`${d.correct}/${d.total} · ${(d.sec/d.total).toFixed(0)}s`,'b');}).join('');
+  const miss=r.rows.filter(x=>!x.ok).map(x=>`<tr><td>${x.n}</td><td>${DOMAIN_INFO[x.domain].en.name}${x.flagged?' (flagged)':''}</td><td dir="${rtl?'rtl':'ltr'}">${x.chosen===null?'-':fmt(x.chosen,rtl)}</td><td dir="${rtl?'rtl':'ltr'}">${fmt(x.correctText,rtl)}</td><td>${x.sec}s</td></tr>`).join('');
+  app.innerHTML=`<div class="panel"><div class="label">${escapeHtml(r.label)}</div><div class="score">${r.correct}<span class="muted" style="font-size:24px"> / ${r.total}</span></div>
+    <p class="muted" style="margin:8px 0 0">${pct}% correct, ${Math.floor(r.totalSec/60)}m ${Math.round(r.totalSec%60)}s of answering time, ${r.avgSec.toFixed(1)}s per question, ${r.flaggedCount} flagged, ${r.unanswered} unanswered.</p></div>
+    <div class="panel"><div class="label">By section</div>${secBars}</div>
+    <div class="panel"><div class="label">By domain (correct, average seconds)</div>${domBars}</div>
+    ${miss?`<div class="panel"><div class="label">Missed or unanswered</div><table><tr><th>Q</th><th>Domain</th><th>Your answer</th><th>Correct</th><th>Time</th></tr>${miss}</table></div>`:''}
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="exportData()">Export all data (JSON)</button><button class="btn line" onclick="goHome()">Back to home</button></div>`;
+}
+function goHome(){ state.screen='home'; state.animate=true; render(); }
+
+// ---------- Legal ----------
+function showLegal(kind){
+  const tos=['This is an unofficial practice tool. It is not affiliated with or endorsed by ETEC or Qiyas.','Questions come from the publicly released ETEC trial tests. Scores here do not predict your official scaled score.','Use it for practice only. The author gives no warranty of accuracy, including for transcribed content.'];
+  const priv=['All answers, timings and history are stored only in this browser (local storage). Nothing is sent to a server.','The export button creates a local file that you control. Clearing history removes the stored runs.','Fonts and libraries load from public CDNs, which may see your IP address as any website would.'];
+  const m=document.createElement('div'); m.className='modal'; m.onclick=e=>{if(e.target===m)m.remove();};
+  m.innerHTML=`<div class="panel" role="dialog" aria-modal="true"><h2>${kind==='tos'?'Terms of Service':'Privacy Policy'}</h2>${(kind==='tos'?tos:priv).map(p=>`<p class="muted" style="margin:10px 0">${p}</p>`).join('')}<button class="btn line" onclick="this.closest('.modal').remove()">Close</button></div>`;
+  document.body.appendChild(m);
+}
+
+render();
+</script>
+</body>
+</html>
